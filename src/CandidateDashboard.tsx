@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { apps } from './config/apps';
 import { getSupabaseClient } from './hooks/useAuth';
+import styles from './CandidateDashboard.module.css';
 
 interface VideoShowcase {
   id: string;
@@ -291,7 +292,7 @@ const CandidateDashboard: React.FC = () => {
     return (
       <div
         key={video.id}
-        className="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
+        className={`${styles.videoCard} group relative`}
         onClick={() => setSelectedVideo(video)}
       >
         {/* Thumbnail */}
@@ -389,19 +390,16 @@ const CandidateDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen" style={{ 
-      background: 'radial-gradient(ellipse at center, #1E293B 0%, #0F172A 100%)',
-      backgroundAttachment: 'fixed'
-    }}>
+    <div className={styles.dashboard}>
       <div className="max-w-7xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-cyan-400 bg-clip-text text-transparent mb-2">
+              <h1 className={styles.title}>
                 Video CV Showcase
               </h1>
-              <p className="text-slate-400 text-lg">
+              <p className={styles.subtitle}>
                 Welcome back, {profile?.first_name || user?.email?.split('@')[0]}! Showcase your talents through video.
               </p>
             </div>
@@ -415,77 +413,77 @@ const CandidateDashboard: React.FC = () => {
           </div>
 
           {/* Enhanced Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-            <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-4">
+          <div className={styles.statsGrid}>
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
                 <Eye size={20} className="text-blue-400" />
                 <TrendingUp size={16} className="text-green-400" />
               </div>
-              <div className="text-2xl font-bold text-white">{stats.totalViews.toLocaleString()}</div>
-              <div className="text-sm text-slate-400">Total Views</div>
+              <div className={styles.statValue}>{stats.totalViews.toLocaleString()}</div>
+              <div className={styles.statLabel}>Total Views</div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-800/30 to-purple-900/30 backdrop-blur-sm border border-purple-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Star size={20} className="text-purple-400" />
-                <Sparkles size={16} className="text-purple-400" />
+                <Star size={20} className="text-blue-400" />
+                <Sparkles size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-purple-300">{stats.profileScore}</div>
-              <div className="text-sm text-purple-200/70">Profile Score</div>
+              <div className={styles.statValue}>{stats.profileScore}</div>
+              <div className={styles.statLabel}>Profile Score</div>
             </div>
 
-            <div className="bg-gradient-to-br from-green-800/30 to-green-900/30 backdrop-blur-sm border border-green-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <CheckCircle size={20} className="text-green-400" />
+                <CheckCircle size={20} className="text-blue-400" />
                 <TrendingUp size={16} className="text-green-400" />
               </div>
-              <div className="text-2xl font-bold text-green-300">{stats.completionRate}%</div>
-              <div className="text-sm text-green-200/70">Complete</div>
+              <div className={styles.statValue}>{stats.completionRate}%</div>
+              <div className={styles.statLabel}>Complete</div>
             </div>
 
-            <div className="bg-gradient-to-br from-yellow-800/30 to-yellow-900/30 backdrop-blur-sm border border-yellow-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Award size={20} className="text-yellow-400" />
-                <Target size={16} className="text-yellow-400" />
+                <Award size={20} className="text-blue-400" />
+                <Target size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-yellow-300">{stats.skillsVerified}</div>
-              <div className="text-sm text-yellow-200/70">Skills Verified</div>
+              <div className={styles.statValue}>{stats.skillsVerified}</div>
+              <div className={styles.statLabel}>Skills Verified</div>
             </div>
 
-            <div className="bg-gradient-to-br from-cyan-800/30 to-cyan-900/30 backdrop-blur-sm border border-cyan-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Video size={20} className="text-cyan-400" />
-                <Film size={16} className="text-cyan-400" />
+                <Video size={20} className="text-blue-400" />
+                <Film size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-cyan-300">{stats.videosUploaded}</div>
-              <div className="text-sm text-cyan-200/70">Videos</div>
+              <div className={styles.statValue}>{stats.videosUploaded}</div>
+              <div className={styles.statLabel}>Videos</div>
             </div>
 
-            <div className="bg-gradient-to-br from-red-800/30 to-red-900/30 backdrop-blur-sm border border-red-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Briefcase size={20} className="text-red-400" />
-                <Users size={16} className="text-red-400" />
+                <Briefcase size={20} className="text-blue-400" />
+                <Users size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-red-300">{stats.jobMatches}</div>
-              <div className="text-sm text-red-200/70">Job Matches</div>
+              <div className={styles.statValue}>{stats.jobMatches}</div>
+              <div className={styles.statLabel}>Job Matches</div>
             </div>
 
-            <div className="bg-gradient-to-br from-orange-800/30 to-orange-900/30 backdrop-blur-sm border border-orange-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <BarChart3 size={20} className="text-orange-400" />
-                <ChevronRight size={16} className="text-orange-400" />
+                <BarChart3 size={20} className="text-blue-400" />
+                <ChevronRight size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-orange-300">{stats.responseRate}%</div>
-              <div className="text-sm text-orange-200/70">Response Rate</div>
+              <div className={styles.statValue}>{stats.responseRate}%</div>
+              <div className={styles.statLabel}>Response Rate</div>
             </div>
 
-            <div className="bg-gradient-to-br from-indigo-800/30 to-indigo-900/30 backdrop-blur-sm border border-indigo-700/50 rounded-xl p-4">
+            <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Star size={20} className="text-indigo-400" />
-                <Sparkles size={16} className="text-indigo-400" />
+                <Star size={20} className="text-blue-400" />
+                <Sparkles size={16} className="text-blue-400" />
               </div>
-              <div className="text-2xl font-bold text-indigo-300">{stats.avgRating.toFixed(1)}</div>
-              <div className="text-sm text-indigo-200/70">Avg Rating</div>
+              <div className={styles.statValue}>{stats.avgRating.toFixed(1)}</div>
+              <div className={styles.statLabel}>Avg Rating</div>
             </div>
           </div>
         </div>
@@ -524,17 +522,17 @@ const CandidateDashboard: React.FC = () => {
               <Card
                 interactive
                 onClick={() => setActiveTab('videos')}
-                className="bg-gradient-to-br from-blue-800/30 to-blue-900/30 border-blue-700/50 hover:border-blue-500/50 transition-colors"
+                className={styles.actionCard}
               >
                 <Card.Header>
                   <div className="flex items-center gap-3 mb-3">
                     <Video size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Video Showcase</h3>
-                      <p className="text-sm text-blue-200/70">Manage your video portfolio</p>
+                      <p className="text-sm text-slate-400">Manage your video portfolio</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full border-blue-500/30 text-blue-300 hover:bg-blue-500/10">
+                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                     <ChevronRight size={14} className="ml-auto" />
                     View All Videos
                   </Button>
@@ -544,17 +542,17 @@ const CandidateDashboard: React.FC = () => {
               <Card
                 interactive
                 onClick={() => handleNavigation('/reelskills')}
-                className="bg-gradient-to-br from-green-800/30 to-green-900/30 border-green-700/50 hover:border-green-500/50 transition-colors"
+                className={styles.actionCard}
               >
                 <Card.Header>
                   <div className="flex items-center gap-3 mb-3">
-                    <Target size={24} className="text-green-400" />
+                    <Target size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Skills Portfolio</h3>
-                      <p className="text-sm text-green-200/70">Showcase your abilities</p>
+                      <p className="text-sm text-slate-400">Showcase your abilities</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full border-green-500/30 text-green-300 hover:bg-green-500/10">
+                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                     <ChevronRight size={14} className="ml-auto" />
                     Manage Skills
                   </Button>
@@ -564,17 +562,17 @@ const CandidateDashboard: React.FC = () => {
               <Card
                 interactive
                 onClick={() => handleNavigation('/jobs')}
-                className="bg-gradient-to-br from-purple-800/30 to-purple-900/30 border-purple-700/50 hover:border-purple-500/50 transition-colors"
+                className={styles.actionCard}
               >
                 <Card.Header>
                   <div className="flex items-center gap-3 mb-3">
-                    <Briefcase size={24} className="text-purple-400" />
+                    <Briefcase size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Job Opportunities</h3>
-                      <p className="text-sm text-purple-200/70">Find your next role</p>
+                      <p className="text-sm text-slate-400">Find your next role</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/10">
+                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                     <ChevronRight size={14} className="ml-auto" />
                     View Matches
                   </Button>
@@ -584,17 +582,17 @@ const CandidateDashboard: React.FC = () => {
               <Card
                 interactive
                 onClick={() => setActiveTab('analytics')}
-                className="bg-gradient-to-br from-orange-800/30 to-orange-900/30 border-orange-700/50 hover:border-orange-500/50 transition-colors"
+                className={styles.actionCard}
               >
                 <Card.Header>
                   <div className="flex items-center gap-3 mb-3">
-                    <BarChart3 size={24} className="text-orange-400" />
+                    <BarChart3 size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Performance</h3>
-                      <p className="text-sm text-orange-200/70">Track your progress</p>
+                      <p className="text-sm text-slate-400">Track your progress</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full border-orange-500/30 text-orange-300 hover:bg-orange-500/10">
+                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                     <ChevronRight size={14} className="ml-auto" />
                     View Analytics
                   </Button>
@@ -669,7 +667,7 @@ const CandidateDashboard: React.FC = () => {
             
             {/* Analytics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+              <Card className={styles.analyticsCard}>
                 <h3 className="text-lg font-bold text-white mb-4">Video Performance</h3>
                 <div className="space-y-4">
                   {videos.slice(0, 3).map((video) => (
@@ -685,14 +683,14 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
-              </div>
+              </Card>
 
-              <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+              <Card className={styles.analyticsCard}>
                 <h3 className="text-lg font-bold text-white mb-4">Profile Insights</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Profile Completeness</span>
-                    <span className="text-green-300 font-bold">{stats.completionRate}%</span>
+                    <span className="text-blue-300 font-bold">{stats.completionRate}%</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Skill Verification Rate</span>
@@ -700,59 +698,59 @@ const CandidateDashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Video Quality Score</span>
-                    <span className="text-purple-300 font-bold">4.2/5</span>
+                    <span className="text-blue-300 font-bold">4.2/5</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-400">Recruiter Interest</span>
-                    <span className="text-yellow-300 font-bold">High</span>
+                    <span className="text-blue-300 font-bold">High</span>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* AI Recommendations */}
-            <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-sm border border-purple-500/30 rounded-xl p-6">
+            <Card className={styles.aiRecommendationsCard}>
               <div className="flex items-center gap-3 mb-4">
-                <Brain size={24} className="text-purple-400" />
+                <Brain size={24} className="text-blue-400" />
                 <h3 className="text-xl font-bold text-white">AI Recommendations</h3>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Content Suggestions</h4>
+                  <h4 className="font-semibold text-blue-300 mb-3">Content Suggestions</h4>
                   <ul className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Create a project walkthrough video to showcase full-stack skills
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Add testimonials from colleagues to build credibility
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Record a problem-solving session to demonstrate thinking process
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Optimization Tips</h4>
+                  <h4 className="font-semibold text-blue-300 mb-3">Optimization Tips</h4>
                   <ul className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Improve video thumbnails for better click-through rates
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Add captions to increase accessibility and engagement
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
+                      <ChevronRight size={14} className="text-blue-400" />
                       Keep videos under 5 minutes for optimal viewer retention
                     </li>
                   </ul>
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
@@ -762,7 +760,7 @@ const CandidateDashboard: React.FC = () => {
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-6">
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+                <Card className={styles.settingsCard}>
                   <h3 className="text-lg font-bold text-white mb-4">Video Preferences</h3>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -784,9 +782,9 @@ const CandidateDashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+                <Card className={styles.settingsCard}>
                   <h3 className="text-lg font-bold text-white mb-4">Recording Quality</h3>
                   <div className="space-y-4">
                     <div>
@@ -806,11 +804,11 @@ const CandidateDashboard: React.FC = () => {
                       </select>
                     </div>
                   </div>
-                </div>
+                </Card>
               </div>
 
               <div className="space-y-6">
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+                <Card className={styles.settingsCard}>
                   <h3 className="text-lg font-bold text-white mb-4">Privacy & Sharing</h3>
                   <div className="space-y-4">
                     <div>
@@ -834,9 +832,9 @@ const CandidateDashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+                <Card className={styles.settingsCard}>
                   <h3 className="text-lg font-bold text-white mb-4">Export & Backup</h3>
                   <div className="space-y-3">
                     <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
@@ -852,7 +850,7 @@ const CandidateDashboard: React.FC = () => {
                       Backup to Cloud
                     </Button>
                   </div>
-                </div>
+                </Card>
               </div>
             </div>
 
