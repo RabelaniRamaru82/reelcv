@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 
 interface AuthState {
@@ -21,7 +21,9 @@ interface AuthActions {
 let supabaseClient: SupabaseClient | null = null;
 
 export const initializeSupabase = (url: string, anonKey: string) => {
-  supabaseClient = createClient(url, anonKey);
+  if (!supabaseClient) {
+    supabaseClient = createClient(url, anonKey);
+  }
   return supabaseClient;
 };
 
@@ -41,7 +43,25 @@ export const useAuthStore = (): AuthState & AuthActions => {
     error: null
   });
 
-  const initialize = async () => {
+  const refreshProfile = useCallback(async () => {
+    if (!supabaseClient || !state.user) return;
+    
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', state.user.id)
+        .single();
+      
+      if (!error && data) {
+        setState(prev => ({ ...prev, profile: data }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  }, [state.user]);
+
+  const initialize = useCallback(async () => {
     if (!supabaseClient) return;
     
     setState(prev => ({ ...prev, isLoading: true }));
@@ -55,7 +75,7 @@ export const useAuthStore = (): AuthState & AuthActions => {
           isAuthenticated: true,
           isLoading: false
         }));
-        await refreshProfile();
+        // Don't call refreshProfile here to avoid circular dependency
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
       }
@@ -66,7 +86,7 @@ export const useAuthStore = (): AuthState & AuthActions => {
         isLoading: false
       }));
     }
-  };
+  }, []);
 
   const login = async (email: string, password: string) => {
     if (!supabaseClient) throw new Error('Supabase not initialized');
@@ -87,8 +107,6 @@ export const useAuthStore = (): AuthState & AuthActions => {
         isAuthenticated: true,
         isLoading: false
       }));
-      
-      await refreshProfile();
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -157,24 +175,6 @@ export const useAuthStore = (): AuthState & AuthActions => {
     if (error) throw error;
   };
 
-  const refreshProfile = async () => {
-    if (!supabaseClient || !state.user) return;
-    
-    try {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('id', state.user.id)
-        .single();
-      
-      if (!error && data) {
-        setState(prev => ({ ...prev, profile: data }));
-      }
-    } catch (error) {
-      console.error('Failed to fetch profile:', error);
-    }
-  };
-
   useEffect(() => {
     if (!supabaseClient) return;
 
@@ -186,7 +186,6 @@ export const useAuthStore = (): AuthState & AuthActions => {
             user: session.user,
             isAuthenticated: true
           }));
-          await refreshProfile();
         } else {
           setState({
             user: null,
@@ -201,6 +200,13 @@ export const useAuthStore = (): AuthState & AuthActions => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Separate effect for refreshing profile when user changes
+  useEffect(() => {
+    if (state.user && !state.profile) {
+      refreshProfile();
+    }
+  }, [state.user, state.profile, refreshProfile]);
 
   return {
     ...state,

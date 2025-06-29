@@ -35,7 +35,7 @@ const PrivateApp: React.FC = () => {
       }
     };
     init();
-  }, [initialize]);
+  }, []); // Empty dependency array to run only once
 
   if (localInitializing || isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
