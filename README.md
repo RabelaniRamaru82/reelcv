@@ -1,38 +1,42 @@
-# ReelCV - AI-Powered Video CV Platform
+# ReelCV - Public Skills Portfolio Generator
 
-Part of the ReelApps ecosystem - AI-powered talent acquisition platform with AWS Bedrock integration.
+Part of the ReelApps ecosystem - Redefining talent showcase beyond traditional resumes.
 
 ## About
-ReelCV is the dynamic candidate profiles application, providing clean, professional candidate showcases optimized for recruiter viewing with comprehensive AI-powered skills analysis, projects showcase, and persona insights.
+ReelCV is a streamlined platform that generates public portfolio links showcasing verified skills and proven projects. No information capture, no traditional resume formats - just pure talent demonstration powered by data from ReelSkills and ReelProjects.
 
-## 🚀 Features
+## 🚀 Core Philosophy
 
-### Core Functionality
-- **Video CV Showcase**: Professional video portfolio management
-- **AI-Powered Analysis**: AWS Bedrock Claude integration for deep skill assessment
-- **Real-time Analytics**: Performance tracking and insights
-- **Public Sharing**: Direct URL access for easy sharing with employers
-- **Responsive Design**: Optimized viewing across all devices
+**Redefining the Status Quo**
+- No cookie-cutter resumes or ATS-friendly formats
+- No manual information entry or data capture
+- Focus on proven skills and real project impact
+- Public portfolio links for easy sharing with employers
 
-### AI Analysis Capabilities
-- **Technical Skills Assessment**: Automated detection and proficiency scoring
-- **Soft Skills Evaluation**: Communication, leadership, and problem-solving analysis
-- **Personality Insights**: Big Five personality traits assessment
-- **Industry Benchmarking**: Performance comparison against industry standards
-- **Personalized Recommendations**: AI-generated improvement suggestions
+## ✨ Features
 
-### AWS Integration
-- **S3 Storage**: Secure video storage in `reelcv-website-bucket` (us-west-2)
-- **Transcribe**: High-accuracy speech-to-text conversion
-- **Bedrock**: Claude AI for advanced content analysis
-- **Real-time Processing**: Live progress tracking during analysis
+### Single Purpose Platform
+- **Public Portfolio Generation**: Create shareable links showcasing your verified talents
+- **Data Integration**: Automatically pulls from ReelSkills and ReelProjects platforms
+- **Zero Data Entry**: No forms, no uploads, no manual input required
+- **Professional Showcase**: Clean, modern portfolio presentation
+
+### Data Sources
+- **ReelSkills Integration**: Verified skills, assessments, and endorsements
+- **ReelProjects Integration**: Completed projects with real impact metrics
+- **Automatic Sync**: Real-time updates from connected platforms
+
+### Portfolio Features
+- **Public Sharing**: Generate long-term shareable portfolio links
+- **View Analytics**: Track portfolio views and engagement
+- **Professional Design**: Clean, employer-friendly presentation
+- **Mobile Optimized**: Perfect viewing on all devices
 
 ## 🛠 Development
 
 ### Prerequisites
 - Node.js 18+
-- AWS Account with Bedrock access
-- Supabase project
+- Supabase project for link management
 
 ### Environment Setup
 ```bash
@@ -42,12 +46,6 @@ cp .env.example .env
 # Configure your environment variables
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# AWS Configuration
-VITE_AWS_REGION=us-west-2
-VITE_AWS_ACCESS_KEY_ID=your_aws_access_key
-VITE_AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-VITE_AWS_S3_BUCKET=reelcv-website-bucket
 ```
 
 ### Installation & Running
@@ -70,63 +68,61 @@ npm run build
 - **Zustand** for state management
 
 ### Backend Services
-- **Supabase** for database and authentication
-- **AWS S3** for video storage
-- **AWS Transcribe** for speech-to-text
-- **AWS Bedrock** for AI analysis
+- **Supabase** for authentication and link management
+- **ReelSkills API** for verified skills data
+- **ReelProjects API** for project portfolio data
 
 ### Database Schema
-- `videos` - Video metadata and URLs
-- `video_analyses` - AI analysis results
-- `skill_competency_frameworks` - Skill assessment criteria
-- `analysis_benchmarks` - Industry comparison data
-- `public_cv_links` - Shareable portfolio links
+- `public_cv_links` - Shareable portfolio links and analytics
+- `profiles` - Basic user profile information
+- External APIs for skills and projects data
 
-## 🤖 AI Analysis Pipeline
+## 🔗 Integration with ReelApps Ecosystem
 
-1. **Video Upload**: Secure upload to AWS S3
-2. **Transcription**: AWS Transcribe converts speech to text
-3. **Content Analysis**: Claude AI analyzes transcript for:
-   - Technical skills and proficiency levels
-   - Communication effectiveness
-   - Personality traits and work style
-   - Industry-specific insights
-4. **Scoring & Benchmarking**: Comparative analysis against industry standards
-5. **Recommendations**: Personalized improvement suggestions
-
-## 🔒 Security & Privacy
-
-- **Row Level Security (RLS)** on all database tables
-- **AWS IAM** for secure service access
-- **HTTPS** for all data transmission
-- **User consent** for AI analysis
-- **Data retention** policies for analysis results
-
-## 📊 Analytics & Insights
-
-### Video Performance Metrics
-- View counts and engagement rates
-- AI analysis scores and trends
-- Skill verification status
-- Industry benchmark comparisons
-
-### AI-Generated Insights
-- Technical skill proficiency mapping
-- Communication style analysis
-- Career development recommendations
-- Interview preparation suggestions
-
-## 🌐 Integration with ReelApps Ecosystem
+### Data Flow
+1. **ReelSkills** → Verified skills, assessments, endorsements
+2. **ReelProjects** → Completed projects, impact metrics, technologies
+3. **ReelCV** → Generates public portfolio showcasing both
 
 ### Cross-Platform Navigation
 - **ReelHunter**: Job matching and recruitment
 - **ReelSkills**: Skills assessment and verification
+- **ReelProjects**: Project documentation and showcase
 - **Unified Authentication**: Single sign-on across platforms
 
-### Data Sharing
-- Skills data synchronization
-- Profile completion tracking
-- Cross-platform analytics
+## 🌐 Public Portfolio Features
+
+### Skills Showcase
+- Verified skill levels and categories
+- Endorsement counts and validation badges
+- Industry-specific skill groupings
+- Proficiency indicators
+
+### Projects Display
+- Project titles and descriptions
+- Technology stacks used
+- Measurable impact and outcomes
+- Links to code repositories (when available)
+
+### Professional Presentation
+- Clean, modern design
+- Employer-friendly layout
+- Contact information and social links
+- Mobile-responsive design
+
+## 📊 Analytics & Insights
+
+### Portfolio Performance
+- Total portfolio views
+- Link sharing statistics
+- Engagement metrics
+- View source tracking
+
+### Professional Metrics
+- Skills verification count
+- Project completion rate
+- Portfolio completeness score
+- Industry benchmark positioning
 
 ## 🚀 Deployment
 
@@ -134,37 +130,58 @@ This repository is configured for deployment to `reelcv.reelapp.co.za`
 
 ### Production Environment
 - **CDN**: Global content delivery
-- **Auto-scaling**: Dynamic resource allocation
-- **Monitoring**: Real-time performance tracking
-- **Backup**: Automated data protection
+- **SSL**: Secure HTTPS for all portfolio links
+- **Analytics**: Portfolio view tracking
+- **Uptime**: 99.9% availability guarantee
 
-## 📈 Performance Optimization
+## 🔒 Security & Privacy
 
-- **Lazy Loading**: Component and route-based code splitting
-- **Image Optimization**: Automatic thumbnail generation
-- **Caching**: Strategic data and asset caching
-- **CDN Integration**: Global content delivery
+### Data Protection
+- **No Data Storage**: ReelCV doesn't store skills or project data
+- **API Integration**: Real-time data fetching from source platforms
+- **Secure Links**: Portfolio links with optional expiration
+- **Privacy Controls**: User-controlled visibility settings
 
-## 🧪 Testing
+### Link Management
+- **Revocable Links**: Users can revoke access anytime
+- **Expiration Options**: Configurable link lifespans
+- **View Tracking**: Anonymous analytics only
+- **Secure Sharing**: HTTPS-only portfolio access
 
-```bash
-# Run tests
-npm test
+## 🎯 Target Audience
 
-# Run with coverage
-npm run test:coverage
+### For Candidates
+- Professionals wanting to showcase verified skills
+- Developers with proven project portfolios
+- Anyone moving beyond traditional resume formats
+- Talent seeking modern portfolio presentation
 
-# E2E tests
-npm run test:e2e
-```
+### For Employers
+- Recruiters wanting to see real skills and projects
+- Hiring managers seeking verified talent
+- Companies valuing proven experience over formatted resumes
+- Organizations embracing modern hiring practices
+
+## 📈 Future Roadmap
+
+### Enhanced Features
+- Custom portfolio themes and branding
+- Industry-specific portfolio templates
+- Advanced analytics and insights
+- Integration with additional ReelApps services
+
+### Platform Expansion
+- API for third-party integrations
+- White-label portfolio solutions
+- Enterprise team portfolio management
+- Advanced sharing and collaboration features
 
 ## 📝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+3. Focus on the core mission: simple, effective portfolio generation
+4. Submit a pull request
 
 ## 📄 License
 
@@ -179,4 +196,4 @@ For technical support or integration questions:
 
 ---
 
-**ReelCV** - Showcase your talents through AI-powered video analysis
+**ReelCV** - Your skills, proven and showcased. No resumes required.
