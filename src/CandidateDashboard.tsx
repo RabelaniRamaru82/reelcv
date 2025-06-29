@@ -28,10 +28,12 @@ import {
   CheckCircle,
   AlertCircle,
   Plus,
-  Copy
+  Copy,
+  Zap
 } from 'lucide-react';
 import { apps } from './config/apps';
 import { getSupabaseClient } from './hooks/useAuth';
+import { AnalysisModal } from './components/VideoAnalysis/AnalysisModal';
 import styles from './CandidateDashboard.module.css';
 
 interface VideoShowcase {
@@ -46,6 +48,8 @@ interface VideoShowcase {
   status: 'draft' | 'published' | 'processing';
   uploadedAt: string;
   skills?: string[];
+  hasAIAnalysis?: boolean;
+  aiScore?: number;
 }
 
 interface ProfileStats {
@@ -57,6 +61,7 @@ interface ProfileStats {
   jobMatches: number;
   responseRate: number;
   avgRating: number;
+  aiAnalysesCompleted: number;
 }
 
 const CandidateDashboard: React.FC = () => {
@@ -64,6 +69,7 @@ const CandidateDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'analytics' | 'profile'>('overview');
   const [selectedVideo, setSelectedVideo] = useState<VideoShowcase | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const [stats] = useState<ProfileStats>({
@@ -74,7 +80,8 @@ const CandidateDashboard: React.FC = () => {
     videosUploaded: 8,
     jobMatches: 24,
     responseRate: 78,
-    avgRating: 4.6
+    avgRating: 4.6,
+    aiAnalysesCompleted: 3
   });
 
   const [videos] = useState<VideoShowcase[]>([
@@ -89,7 +96,9 @@ const CandidateDashboard: React.FC = () => {
       category: 'introduction',
       status: 'published',
       uploadedAt: '2024-01-15',
-      skills: ['Communication', 'Leadership']
+      skills: ['Communication', 'Leadership'],
+      hasAIAnalysis: true,
+      aiScore: 84
     },
     {
       id: '2',
@@ -102,7 +111,9 @@ const CandidateDashboard: React.FC = () => {
       category: 'skills',
       status: 'published',
       uploadedAt: '2024-01-12',
-      skills: ['React', 'JavaScript', 'Frontend Development']
+      skills: ['React', 'JavaScript', 'Frontend Development'],
+      hasAIAnalysis: true,
+      aiScore: 91
     },
     {
       id: '3',
@@ -115,7 +126,9 @@ const CandidateDashboard: React.FC = () => {
       category: 'project',
       status: 'published',
       uploadedAt: '2024-01-08',
-      skills: ['Full-stack Development', 'Node.js', 'MongoDB', 'React']
+      skills: ['Full-stack Development', 'Node.js', 'MongoDB', 'React'],
+      hasAIAnalysis: true,
+      aiScore: 88
     },
     {
       id: '4',
@@ -128,7 +141,8 @@ const CandidateDashboard: React.FC = () => {
       category: 'testimonial',
       status: 'published',
       uploadedAt: '2024-01-05',
-      skills: ['Leadership', 'Team Collaboration', 'Project Management']
+      skills: ['Leadership', 'Team Collaboration', 'Project Management'],
+      hasAIAnalysis: false
     },
     {
       id: '5',
@@ -141,7 +155,8 @@ const CandidateDashboard: React.FC = () => {
       category: 'skills',
       status: 'processing',
       uploadedAt: '2024-01-18',
-      skills: ['Python', 'Data Analysis', 'Pandas']
+      skills: ['Python', 'Data Analysis', 'Pandas'],
+      hasAIAnalysis: false
     }
   ]);
 
@@ -286,6 +301,18 @@ const CandidateDashboard: React.FC = () => {
     }
   };
 
+  const getAIScoreColor = (score: number) => {
+    if (score >= 85) return 'text-green-400';
+    if (score >= 70) return 'text-blue-400';
+    if (score >= 60) return 'text-yellow-400';
+    return 'text-red-400';
+  };
+
+  const handleVideoAnalysis = (video: VideoShowcase) => {
+    setSelectedVideo(video);
+    setShowAnalysisModal(true);
+  };
+
   const renderVideoCard = (video: VideoShowcase) => {
     const CategoryIcon = getCategoryIcon(video.category);
     
@@ -293,7 +320,6 @@ const CandidateDashboard: React.FC = () => {
       <div
         key={video.id}
         className={`${styles.videoCard} group relative`}
-        onClick={() => setSelectedVideo(video)}
       >
         {/* Thumbnail */}
         <div className="relative aspect-video bg-slate-700/50">
@@ -304,6 +330,14 @@ const CandidateDashboard: React.FC = () => {
           />
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
           
+          {/* AI Analysis Badge */}
+          {video.hasAIAnalysis && (
+            <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-purple-600/80 backdrop-blur-sm rounded text-xs text-white">
+              <Brain size={10} />
+              AI: {video.aiScore}
+            </div>
+          )}
+
           {/* Play Button */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
@@ -339,6 +373,18 @@ const CandidateDashboard: React.FC = () => {
           <p className="text-sm text-slate-400 mb-3 line-clamp-2">
             {video.description}
           </p>
+
+          {/* AI Analysis Summary */}
+          {video.hasAIAnalysis && (
+            <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-purple-300">AI Analysis Complete</span>
+                <span className={`font-bold ${getAIScoreColor(video.aiScore!)}`}>
+                  Score: {video.aiScore}/100
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Skills Tags */}
           {video.skills && (
@@ -379,6 +425,20 @@ const CandidateDashboard: React.FC = () => {
               <Play size={14} className="mr-1" />
               Watch
             </Button>
+            {!video.hasAIAnalysis && video.status === 'published' && (
+              <Button 
+                size="small" 
+                variant="outline" 
+                className="bg-purple-600/80 backdrop-blur-sm border-purple-500/50 text-purple-200 hover:bg-purple-500/80"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleVideoAnalysis(video);
+                }}
+              >
+                <Brain size={14} className="mr-1" />
+                AI Analyze
+              </Button>
+            )}
             <Button size="small" variant="outline" className="bg-slate-800/80 backdrop-blur-sm">
               <Share2 size={14} className="mr-1" />
               Share
@@ -400,16 +460,25 @@ const CandidateDashboard: React.FC = () => {
                 Video CV Showcase
               </h1>
               <p className={styles.subtitle}>
-                Welcome back, {profile?.first_name || user?.email?.split('@')[0]}! Showcase your talents through video.
+                Welcome back, {profile?.first_name || user?.email?.split('@')[0]}! Showcase your talents through AI-powered video analysis.
               </p>
             </div>
-            <Button 
-              onClick={() => setShowUploadModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-blue-500/25"
-            >
-              <Camera size={16} className="mr-2" />
-              Record New Video
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => setShowUploadModal(true)}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-blue-500/25"
+              >
+                <Camera size={16} className="mr-2" />
+                Record New Video
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10"
+              >
+                <Brain size={16} className="mr-2" />
+                AI Insights
+              </Button>
+            </div>
           </div>
 
           {/* Enhanced Stats Grid */}
@@ -479,11 +548,11 @@ const CandidateDashboard: React.FC = () => {
 
             <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Star size={20} className="text-blue-400" />
-                <Sparkles size={16} className="text-blue-400" />
+                <Brain size={20} className="text-purple-400" />
+                <Zap size={16} className="text-purple-400" />
               </div>
-              <div className={styles.statValue}>{stats.avgRating.toFixed(1)}</div>
-              <div className={styles.statLabel}>Avg Rating</div>
+              <div className={styles.statValue}>{stats.aiAnalysesCompleted}</div>
+              <div className={styles.statLabel}>AI Analyses</div>
             </div>
           </div>
         </div>
@@ -493,7 +562,7 @@ const CandidateDashboard: React.FC = () => {
           {[
             { key: 'overview', label: 'Overview', icon: BarChart3 },
             { key: 'videos', label: 'Video Showcase', icon: Video },
-            { key: 'analytics', label: 'Analytics', icon: TrendingUp },
+            { key: 'analytics', label: 'AI Analytics', icon: Brain },
             { key: 'profile', label: 'Profile Settings', icon: Settings }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -517,7 +586,7 @@ const CandidateDashboard: React.FC = () => {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Quick Actions */}
+            {/* AI-Powered Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card
                 interactive
@@ -529,12 +598,32 @@ const CandidateDashboard: React.FC = () => {
                     <Video size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Video Showcase</h3>
-                      <p className="text-sm text-slate-400">Manage your video portfolio</p>
+                      <p className="text-sm text-slate-400">AI-enhanced video portfolio</p>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                     <ChevronRight size={14} className="ml-auto" />
                     View All Videos
+                  </Button>
+                </Card.Header>
+              </Card>
+
+              <Card
+                interactive
+                onClick={() => setActiveTab('analytics')}
+                className={styles.actionCard}
+              >
+                <Card.Header>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Brain size={24} className="text-purple-400" />
+                    <div>
+                      <h3 className="text-lg font-bold text-white">AI Analytics</h3>
+                      <p className="text-sm text-slate-400">Deep skill analysis & insights</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
+                    <ChevronRight size={14} className="ml-auto" />
+                    View AI Insights
                   </Button>
                 </Card.Header>
               </Card>
@@ -569,7 +658,7 @@ const CandidateDashboard: React.FC = () => {
                     <Briefcase size={24} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-bold text-white">Job Opportunities</h3>
-                      <p className="text-sm text-slate-400">Find your next role</p>
+                      <p className="text-sm text-slate-400">AI-matched positions</p>
                     </div>
                   </div>
                   <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
@@ -578,29 +667,9 @@ const CandidateDashboard: React.FC = () => {
                   </Button>
                 </Card.Header>
               </Card>
-
-              <Card
-                interactive
-                onClick={() => setActiveTab('analytics')}
-                className={styles.actionCard}
-              >
-                <Card.Header>
-                  <div className="flex items-center gap-3 mb-3">
-                    <BarChart3 size={24} className="text-blue-400" />
-                    <div>
-                      <h3 className="text-lg font-bold text-white">Performance</h3>
-                      <p className="text-sm text-slate-400">Track your progress</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                    <ChevronRight size={14} className="ml-auto" />
-                    View Analytics
-                  </Button>
-                </Card.Header>
-              </Card>
             </div>
 
-            {/* Recent Videos Preview */}
+            {/* Recent Videos with AI Analysis */}
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-white">Recent Videos</h2>
@@ -617,6 +686,50 @@ const CandidateDashboard: React.FC = () => {
                 {videos.slice(0, 3).map(renderVideoCard)}
               </div>
             </div>
+
+            {/* AI Recommendations Preview */}
+            <Card className={styles.aiRecommendationsCard}>
+              <div className="flex items-center gap-3 mb-4">
+                <Brain size={24} className="text-purple-400" />
+                <h3 className="text-xl font-bold text-white">AI Recommendations</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-purple-300 mb-3">Content Suggestions</h4>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Create a project walkthrough video to showcase full-stack skills
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Add testimonials from colleagues to build credibility
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Record a problem-solving session to demonstrate thinking process
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-300 mb-3">Optimization Tips</h4>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Improve video thumbnails for better click-through rates
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Add captions to increase accessibility and engagement
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Keep videos under 5 minutes for optimal viewer retention
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </Card>
           </div>
         )}
 
@@ -663,22 +776,27 @@ const CandidateDashboard: React.FC = () => {
 
         {activeTab === 'analytics' && (
           <div className="space-y-8">
-            <h2 className="text-2xl font-bold text-white">Performance Analytics</h2>
+            <h2 className="text-2xl font-bold text-white">AI Analytics Dashboard</h2>
             
-            {/* Analytics Cards */}
+            {/* AI Analytics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className={styles.analyticsCard}>
-                <h3 className="text-lg font-bold text-white mb-4">Video Performance</h3>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Brain size={20} className="text-purple-400" />
+                  AI Video Performance
+                </h3>
                 <div className="space-y-4">
-                  {videos.slice(0, 3).map((video) => (
+                  {videos.filter(v => v.hasAIAnalysis).map((video) => (
                     <div key={video.id} className="flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">{video.title}</p>
-                        <p className="text-sm text-slate-400">{video.views} views • {video.likes} likes</p>
+                        <p className="text-sm text-slate-400">{video.views} views • AI Score: {video.aiScore}/100</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-blue-300">{Math.round((video.likes / video.views) * 100)}%</div>
-                        <div className="text-xs text-slate-400">Engagement</div>
+                        <div className={`text-lg font-bold ${getAIScoreColor(video.aiScore!)}`}>
+                          {video.aiScore}%
+                        </div>
+                        <div className="text-xs text-slate-400">AI Rating</div>
                       </div>
                     </div>
                   ))}
@@ -686,66 +804,86 @@ const CandidateDashboard: React.FC = () => {
               </Card>
 
               <Card className={styles.analyticsCard}>
-                <h3 className="text-lg font-bold text-white mb-4">Profile Insights</h3>
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Target size={20} className="text-blue-400" />
+                  Skill Analysis Summary
+                </h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Profile Completeness</span>
-                    <span className="text-blue-300 font-bold">{stats.completionRate}%</span>
+                    <span className="text-slate-400">Technical Skills Detected</span>
+                    <span className="text-blue-300 font-bold">15</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Skill Verification Rate</span>
-                    <span className="text-blue-300 font-bold">85%</span>
+                    <span className="text-slate-400">Avg Confidence Score</span>
+                    <span className="text-blue-300 font-bold">87%</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Video Quality Score</span>
+                    <span className="text-slate-400">Communication Rating</span>
                     <span className="text-blue-300 font-bold">4.2/5</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Recruiter Interest</span>
-                    <span className="text-blue-300 font-bold">High</span>
+                    <span className="text-slate-400">Industry Percentile</span>
+                    <span className="text-blue-300 font-bold">78th</span>
                   </div>
                 </div>
               </Card>
             </div>
 
-            {/* AI Recommendations */}
+            {/* Enhanced AI Recommendations */}
             <Card className={styles.aiRecommendationsCard}>
               <div className="flex items-center gap-3 mb-4">
-                <Brain size={24} className="text-blue-400" />
-                <h3 className="text-xl font-bold text-white">AI Recommendations</h3>
+                <Brain size={24} className="text-purple-400" />
+                <h3 className="text-xl font-bold text-white">Advanced AI Recommendations</h3>
               </div>
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <h4 className="font-semibold text-blue-300 mb-3">Content Suggestions</h4>
+                  <h4 className="font-semibold text-purple-300 mb-3">Technical Skills</h4>
                   <ul className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Create a project walkthrough video to showcase full-stack skills
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Demonstrate system design thinking
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Add testimonials from colleagues to build credibility
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Show testing methodologies
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Record a problem-solving session to demonstrate thinking process
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Include performance optimization examples
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-blue-300 mb-3">Optimization Tips</h4>
+                  <h4 className="font-semibold text-purple-300 mb-3">Communication</h4>
                   <ul className="space-y-2 text-sm text-slate-300">
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Improve video thumbnails for better click-through rates
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Improve eye contact with camera
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Add captions to increase accessibility and engagement
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Use more concrete examples
                     </li>
                     <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-blue-400" />
-                      Keep videos under 5 minutes for optimal viewer retention
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Practice clearer articulation
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-purple-300 mb-3">Content Strategy</h4>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Create industry-specific content
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Add more project walkthroughs
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <ChevronRight size={14} className="text-purple-400" />
+                      Include team collaboration examples
                     </li>
                   </ul>
                 </div>
@@ -770,7 +908,7 @@ const CandidateDashboard: React.FC = () => {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300">Enable video analytics</span>
+                      <span className="text-slate-300">Enable AI analysis</span>
                       <button className="w-12 h-6 bg-blue-600 rounded-full relative">
                         <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                       </button>
@@ -785,22 +923,23 @@ const CandidateDashboard: React.FC = () => {
                 </Card>
 
                 <Card className={styles.settingsCard}>
-                  <h3 className="text-lg font-bold text-white mb-4">Recording Quality</h3>
+                  <h3 className="text-lg font-bold text-white mb-4">AI Analysis Settings</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm text-slate-300 mb-2">Video Resolution</label>
+                      <label className="block text-sm text-slate-300 mb-2">Default Analysis Depth</label>
                       <select className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white">
-                        <option>1080p (Recommended)</option>
-                        <option>720p</option>
-                        <option>480p</option>
+                        <option>Comprehensive (Recommended)</option>
+                        <option>Standard</option>
+                        <option>Quick</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm text-slate-300 mb-2">Audio Quality</label>
+                      <label className="block text-sm text-slate-300 mb-2">Industry Context</label>
                       <select className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white">
-                        <option>High (320kbps)</option>
-                        <option>Medium (192kbps)</option>
-                        <option>Low (128kbps)</option>
+                        <option>Software Development</option>
+                        <option>Data Science</option>
+                        <option>Product Management</option>
+                        <option>Design</option>
                       </select>
                     </div>
                   </div>
@@ -820,13 +959,13 @@ const CandidateDashboard: React.FC = () => {
                       </select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300">Allow video downloads</span>
+                      <span className="text-slate-300">Share AI insights publicly</span>
                       <button className="w-12 h-6 bg-slate-600 rounded-full relative">
                         <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-300">Enable comments</span>
+                      <span className="text-slate-300">Enable skill benchmarking</span>
                       <button className="w-12 h-6 bg-blue-600 rounded-full relative">
                         <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
                       </button>
@@ -841,13 +980,13 @@ const CandidateDashboard: React.FC = () => {
                       <Download size={16} className="mr-2" />
                       Download All Videos
                     </Button>
+                    <Button variant="outline" className="w-full border-purple-600/50 text-purple-300 hover:bg-purple-500/10">
+                      <Brain size={16} className="mr-2" />
+                      Export AI Analysis Reports
+                    </Button>
                     <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
                       <Share2 size={16} className="mr-2" />
                       Export Portfolio Link
-                    </Button>
-                    <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                      <Upload size={16} className="mr-2" />
-                      Backup to Cloud
                     </Button>
                   </div>
                 </Card>
@@ -880,6 +1019,19 @@ const CandidateDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* AI Analysis Modal */}
+      {showAnalysisModal && selectedVideo && user && (
+        <AnalysisModal
+          isOpen={showAnalysisModal}
+          onClose={() => {
+            setShowAnalysisModal(false);
+            setSelectedVideo(null);
+          }}
+          video={selectedVideo}
+          candidateId={user.id}
+        />
+      )}
     </div>
   );
 };
