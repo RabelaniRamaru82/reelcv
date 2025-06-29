@@ -18,6 +18,13 @@ import {
   Code,
   Briefcase
 } from 'lucide-react';
+import { 
+  ReelAppsMainLink, 
+  ReelSkillsLink, 
+  ReelProjectsLink, 
+  ReelHunterLink,
+  RecruitmentCTA
+} from './components/ui';
 
 interface PublicLinkRow {
   candidate_id: string;
@@ -226,9 +233,15 @@ const PublicCV: React.FC = () => {
             <Globe size={48} className="mx-auto text-slate-400 mb-4" />
             <h1 className="text-xl font-bold mb-3 text-white">Portfolio Not Found</h1>
             <p className="mb-6 text-slate-400">{error || 'This portfolio link is invalid or has expired.'}</p>
-            <Button as="a" href="https://reelapp.co.za" variant="primary">
-              Visit ReelApps
-            </Button>
+            <div className="space-y-3">
+              <Button as="a" href="https://www.reelapps.co.za" variant="primary">
+                Visit ReelApps
+              </Button>
+              <div className="text-sm text-slate-500">
+                <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" /> - 
+                The future of talent management
+              </div>
+            </div>
           </div>
         </Card>
       </div>
@@ -243,6 +256,9 @@ const PublicCV: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-full text-blue-300 text-sm mb-4">
             <Globe size={16} />
             Skills Portfolio - Beyond Traditional Resumes
+          </div>
+          <div className="text-xs text-slate-500">
+            Powered by <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" />
           </div>
         </div>
 
@@ -328,7 +344,7 @@ const PublicCV: React.FC = () => {
                   <Target size={24} className="text-blue-400" />
                   <h2 className="text-2xl font-bold text-white">Verified Skills</h2>
                   <div className="text-sm text-slate-400 bg-slate-700/50 px-2 py-1 rounded">
-                    From ReelSkills
+                    From <ReelSkillsLink className="text-blue-400 hover:text-blue-300" />
                   </div>
                 </div>
                 
@@ -356,6 +372,13 @@ const PublicCV: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                
+                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-300">
+                    <strong>Skills verified through <ReelSkillsLink className="text-blue-400 hover:text-blue-300" />:</strong> 
+                    Professional assessments, peer endorsements, and real-world validation.
+                  </p>
+                </div>
               </div>
             </Card>
 
@@ -366,7 +389,7 @@ const PublicCV: React.FC = () => {
                   <Award size={24} className="text-blue-400" />
                   <h2 className="text-2xl font-bold text-white">Proven Projects</h2>
                   <div className="text-sm text-slate-400 bg-slate-700/50 px-2 py-1 rounded">
-                    From ReelProjects
+                    From <ReelProjectsLink className="text-purple-400 hover:text-purple-300" />
                   </div>
                 </div>
                 
@@ -416,6 +439,13 @@ const PublicCV: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                
+                <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                  <p className="text-sm text-purple-300">
+                    <strong>Projects documented through <ReelProjectsLink className="text-purple-400 hover:text-purple-300" />:</strong> 
+                    Real impact metrics, technical details, and proven results.
+                  </p>
+                </div>
               </div>
             </Card>
           </div>
@@ -463,6 +493,30 @@ const PublicCV: React.FC = () => {
               </div>
             </Card>
 
+            {/* ReelApps Ecosystem Promotion */}
+            <Card className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border-green-500/30">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-green-300 mb-3">Powered by ReelApps</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Target size={14} className="text-blue-400" />
+                    <ReelSkillsLink className="text-blue-400 hover:text-blue-300" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award size={14} className="text-purple-400" />
+                    <ReelProjectsLink className="text-purple-400 hover:text-purple-300" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Briefcase size={14} className="text-green-400" />
+                    <ReelHunterLink className="text-green-400 hover:text-green-300" />
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-green-500/20">
+                  <ReelAppsMainLink className="text-blue-400 hover:text-blue-300 font-medium" />
+                </div>
+              </div>
+            </Card>
+
             {/* Contact CTA */}
             <Card className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 border-blue-500/30">
               <div className="p-6 text-center">
@@ -475,23 +529,36 @@ const PublicCV: React.FC = () => {
                   <Button 
                     as="a" 
                     href={`mailto:${profile.email}`}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 w-full"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 w-full mb-3"
                   >
                     <Mail size={16} className="mr-2" />
                     Get in Touch
                   </Button>
                 )}
+                <div className="text-xs text-slate-500">
+                  Or find similar talent through <ReelHunterLink className="text-green-400 hover:text-green-300" />
+                </div>
               </div>
             </Card>
+
+            {/* Recruitment CTA for employers */}
+            <RecruitmentCTA />
           </div>
         </div>
 
         {/* Footer */}
         <div className="text-center mt-12 pt-8 border-t border-slate-700/50">
-          <p className="text-slate-400 text-sm">
-            Powered by <span className="text-blue-400 font-semibold">ReelApps</span> - 
+          <div className="mb-4">
+            <ReelAppsMainLink className="text-blue-400 hover:text-blue-300 font-semibold text-lg" />
+          </div>
+          <p className="text-slate-400 text-sm mb-4">
             Redefining talent showcase beyond traditional resumes
           </p>
+          <div className="flex justify-center gap-6 text-sm">
+            <ReelSkillsLink className="text-blue-400 hover:text-blue-300" />
+            <ReelProjectsLink className="text-purple-400 hover:text-purple-300" />
+            <ReelHunterLink className="text-green-400 hover:text-green-300" />
+          </div>
         </div>
       </div>
     </div>

@@ -15,6 +15,16 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { getSupabaseClient } from './hooks/useAuth';
+import { 
+  ReelAppsMainLink, 
+  ReelSkillsLink, 
+  ReelProjectsLink, 
+  ReelHunterLink,
+  ReelAppsSolutionsLink,
+  ReelAppsBlogLink,
+  SkillVerificationCTA,
+  ProjectShowcaseCTA
+} from './components/ui';
 import styles from './CandidateDashboard.module.css';
 
 interface PublicLink {
@@ -378,6 +388,10 @@ const CandidateDashboard: React.FC = () => {
                 Welcome back, {profile?.first_name || user?.email?.split('@')[0]}! 
                 Your proven skills and projects, redefined beyond traditional resumes.
               </p>
+              <div className="mt-3 text-sm text-slate-400">
+                Powered by <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" /> - 
+                The complete talent management ecosystem
+              </div>
             </div>
             <div className="flex gap-3">
               <Button 
@@ -464,7 +478,7 @@ const CandidateDashboard: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-2">Your Public Skills Portfolio</h2>
                 <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
                   Share your proven skills and projects with employers. No traditional resume needed - 
-                  just pure, verified talent showcase powered by ReelSkills and ReelProjects.
+                  just pure, verified talent showcase powered by <ReelSkillsLink /> and <ReelProjectsLink />.
                 </p>
                 
                 {publicLink ? (
@@ -549,6 +563,16 @@ const CandidateDashboard: React.FC = () => {
                   <div className="text-sm text-slate-400">Complete</div>
                 </div>
               </div>
+              
+              <div className="mt-6 p-4 bg-slate-700/30 rounded-lg">
+                <p className="text-sm text-slate-300 mb-2">
+                  <strong>Want to improve your portfolio performance?</strong>
+                </p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <ReelAppsBlogLink className="text-blue-400 hover:text-blue-300" />
+                  <ReelAppsSolutionsLink className="text-purple-400 hover:text-purple-300" />
+                </div>
+              </div>
             </Card>
 
             {/* Data Sources Info */}
@@ -590,9 +614,40 @@ const CandidateDashboard: React.FC = () => {
                 
                 <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm text-blue-300">
-                    <strong>No manual entry required!</strong> Your portfolio automatically syncs with verified skills from ReelSkills 
-                    and proven projects from ReelProjects. Focus on building your expertise - we'll handle the showcase.
+                    <strong>No manual entry required!</strong> Your portfolio automatically syncs with verified skills from <ReelSkillsLink /> 
+                    and proven projects from <ReelProjectsLink />. Focus on building your expertise - we'll handle the showcase.
                   </p>
+                </div>
+                
+                {/* SEO CTAs */}
+                <SkillVerificationCTA />
+                <ProjectShowcaseCTA />
+              </div>
+            </Card>
+
+            {/* ReelApps Ecosystem Promotion */}
+            <Card className="bg-gradient-to-r from-green-600/10 to-blue-600/10 border-green-500/30">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Sparkles size={20} className="text-green-400" />
+                  Explore the Complete ReelApps Ecosystem
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+                    <ReelHunterLink className="text-lg font-semibold mb-2 block" />
+                    <p className="text-sm text-slate-400">
+                      AI-powered recruitment platform connecting top talent with leading companies.
+                    </p>
+                  </div>
+                  <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+                    <ReelAppsSolutionsLink className="text-lg font-semibold mb-2 block" />
+                    <p className="text-sm text-slate-400">
+                      Complete talent management suite for modern organizations.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 text-center">
+                  <ReelAppsMainLink className="text-blue-400 hover:text-blue-300 font-medium" />
                 </div>
               </div>
             </Card>
@@ -663,6 +718,16 @@ const CandidateDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
+                
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-300 mb-2">
+                    <strong>Maximize your portfolio impact:</strong>
+                  </p>
+                  <div className="space-y-1 text-sm">
+                    <ReelSkillsLink className="block" />
+                    <ReelProjectsLink className="block" />
+                  </div>
+                </div>
               </Card>
             </div>
 
@@ -675,6 +740,16 @@ const CandidateDashboard: React.FC = () => {
                   <p><strong>Public Indexing:</strong> Allow search engines to discover your portfolio (improves visibility)</p>
                   <p><strong>Data Sources:</strong> Control which platforms contribute to your portfolio showcase</p>
                   <p><strong>Verification Badges:</strong> Display skill verification status from ReelSkills assessments</p>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-blue-500/20">
+                  <p className="text-sm text-blue-300 mb-2">
+                    <strong>Need help optimizing your portfolio?</strong>
+                  </p>
+                  <div className="flex gap-4">
+                    <ReelAppsBlogLink className="text-sm" />
+                    <ReelAppsMainLink className="text-sm" />
+                  </div>
                 </div>
               </div>
             </Card>
