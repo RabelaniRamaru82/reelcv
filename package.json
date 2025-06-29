@@ -11,10 +11,6 @@
     "lint": "eslint . --ext .ts,.tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@reelapps/auth": "workspace:*",
-    "@reelapps/config": "workspace:*",
-    "@reelapps/types": "workspace:*",
-    "@reelapps/ui": "workspace:*",
     "@supabase/supabase-js": "^2.39.0",
     "lucide-react": "^0.344.0",
     "react": "^18.2.0",
