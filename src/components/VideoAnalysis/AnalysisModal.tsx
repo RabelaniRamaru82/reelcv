@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Play, Brain, Loader, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Play, Brain, Loader, CheckCircle, AlertCircle, Upload, Cloud } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAIAnalysis } from '../../hooks/useAIAnalysis';
 import { AIAnalysisRequest } from '../../types/ai-analysis';
@@ -37,8 +37,13 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
   if (!isOpen) return null;
 
   const handleStartAnalysis = async () => {
+    if (!video.url) {
+      alert('Video URL is required for analysis. Please ensure the video is properly uploaded.');
+      return;
+    }
+
     const request: AIAnalysisRequest = {
-      videoUrl: video.url || `https://example.com/videos/${video.id}.mp4`,
+      videoUrl: video.url,
       videoMetadata: {
         title: video.title,
         description: video.description,
@@ -50,6 +55,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
     };
 
     try {
+      console.log('Starting AI analysis with AWS Bedrock...', request);
       await analyzeVideo(request);
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -58,7 +64,10 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
 
   const parseDuration = (duration: string): number => {
     const parts = duration.split(':');
-    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    return 0;
   };
 
   return (
@@ -67,7 +76,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
             <Brain size={24} className="mr-2" />
-            AI Video Analysis
+            AI Video Analysis with AWS Bedrock
           </h2>
           <button onClick={onClose} className={styles.closeButton}>
             <X size={24} />
@@ -84,6 +93,12 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
               <div className={styles.videoMeta}>
                 <span className={styles.category}>{video.category}</span>
                 <span className={styles.duration}>{video.duration}</span>
+                {video.url && (
+                  <span className="flex items-center gap-1 text-green-400">
+                    <Cloud size={12} />
+                    Ready for analysis
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -92,7 +107,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
             <>
               {/* Analysis Options */}
               <div className={styles.analysisOptions}>
-                <h4 className={styles.sectionTitle}>Analysis Options</h4>
+                <h4 className={styles.sectionTitle}>AI Analysis Configuration</h4>
                 
                 <div className={styles.optionGroup}>
                   <label className={styles.checkboxLabel}>
@@ -108,7 +123,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     Include Personality Analysis
                   </label>
                   <p className={styles.optionDescription}>
-                    Analyze communication style, work preferences, and personality traits
+                    Analyze communication style, work preferences, and personality traits using Claude AI
                   </p>
                 </div>
 
@@ -126,12 +141,12 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     Industry Benchmarking
                   </label>
                   <p className={styles.optionDescription}>
-                    Compare skills and performance against industry standards
+                    Compare skills and performance against industry standards and similar profiles
                   </p>
                 </div>
 
                 <div className={styles.optionGroup}>
-                  <label className={styles.label}>Focus Areas</label>
+                  <label className={styles.label}>Analysis Focus Areas</label>
                   <div className={styles.focusAreas}>
                     {[
                       { id: 'technical-skills', label: 'Technical Skills' },
@@ -183,13 +198,30 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
                     <option value="sales">Sales</option>
                   </select>
                 </div>
+
+                {/* AWS Services Info */}
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-4">
+                  <h5 className="text-blue-300 font-semibold mb-2 flex items-center gap-2">
+                    <Cloud size={16} />
+                    AWS Services Used
+                  </h5>
+                  <ul className="text-sm text-blue-200 space-y-1">
+                    <li>• <strong>S3:</strong> Secure video storage in your reelcv-website-bucket</li>
+                    <li>• <strong>Transcribe:</strong> High-accuracy speech-to-text conversion</li>
+                    <li>• <strong>Bedrock (Claude):</strong> Advanced AI analysis and insights</li>
+                  </ul>
+                </div>
               </div>
 
               <div className={styles.modalActions}>
                 <Button variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button onClick={handleStartAnalysis} className={styles.analyzeButton}>
+                <Button 
+                  onClick={handleStartAnalysis} 
+                  className={styles.analyzeButton}
+                  disabled={!video.url}
+                >
                   <Brain size={16} className="mr-2" />
                   Start AI Analysis
                 </Button>
@@ -202,7 +234,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
             <div className={styles.analysisProgress}>
               <div className={styles.progressHeader}>
                 <Loader size={24} className={styles.spinner} />
-                <h4>Analyzing Video...</h4>
+                <h4>Analyzing Video with AWS AI...</h4>
               </div>
               
               <div className={styles.progressBar}>
@@ -214,6 +246,13 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
               
               <p className={styles.progressText}>{currentStep}</p>
               <p className={styles.progressPercent}>{analysisProgress}% Complete</p>
+              
+              <div className="mt-4 text-sm text-slate-400 space-y-1">
+                <p>• Uploading to S3: reelcv-website-bucket (us-west-2)</p>
+                <p>• Transcribing with AWS Transcribe</p>
+                <p>• Analyzing with Claude via AWS Bedrock</p>
+                <p>• Generating insights and recommendations</p>
+              </div>
             </div>
           )}
 
@@ -223,7 +262,15 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
               <AlertCircle size={48} className={styles.errorIcon} />
               <h4>Analysis Failed</h4>
               <p>{error}</p>
-              <Button onClick={() => window.location.reload()}>
+              <div className="text-sm text-slate-400 mt-2">
+                <p>Please check:</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>AWS credentials are configured</li>
+                  <li>Video URL is accessible</li>
+                  <li>S3 bucket permissions are correct</li>
+                </ul>
+              </div>
+              <Button onClick={() => window.location.reload()} className="mt-4">
                 Try Again
               </Button>
             </div>
@@ -234,7 +281,7 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
             <div className={styles.resultsPreview}>
               <div className={styles.successHeader}>
                 <CheckCircle size={24} className={styles.successIcon} />
-                <h4>Analysis Complete!</h4>
+                <h4>AI Analysis Complete!</h4>
               </div>
               
               <div className={styles.scoreGrid}>
@@ -257,21 +304,36 @@ export const AnalysisModal: React.FC<AnalysisModalProps> = ({
               </div>
 
               <div className={styles.keyInsights}>
-                <h5>Key Insights</h5>
+                <h5>Key Technical Skills Detected</h5>
                 <ul>
                   {results.technicalSkills.slice(0, 3).map((skill, index) => (
                     <li key={index}>
-                      <strong>{skill.skill}</strong>: {skill.traits.proficiency} level with {skill.confidence}% confidence
+                      <strong>{skill.skill}</strong>: {skill.traits.proficiency} level 
+                      ({skill.confidence}% confidence)
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm">
+                <p className="text-green-300">
+                  ✅ Analysis completed using AWS Bedrock Claude AI
+                </p>
+                <p className="text-green-200 text-xs mt-1">
+                  Processing time: {results.processingTime}s | 
+                  Transcript confidence: {Math.round(results.transcript.confidence * 100)}%
+                </p>
               </div>
 
               <div className={styles.modalActions}>
                 <Button variant="outline" onClick={onClose}>
                   Close
                 </Button>
-                <Button onClick={() => {/* Navigate to detailed results */}}>
+                <Button onClick={() => {
+                  // Navigate to detailed results - this would be implemented
+                  console.log('Navigate to detailed report:', results.id);
+                  alert('Detailed report view coming soon!');
+                }}>
                   View Detailed Report
                 </Button>
               </div>
