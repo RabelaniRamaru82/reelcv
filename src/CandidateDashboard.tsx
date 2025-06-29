@@ -29,7 +29,8 @@ import {
   AlertCircle,
   Plus,
   Copy,
-  Zap
+  Zap,
+  ExternalLink
 } from 'lucide-react';
 import { apps } from './config/apps';
 import { getSupabaseClient } from './hooks/useAuth';
@@ -50,6 +51,7 @@ interface VideoShowcase {
   skills?: string[];
   hasAIAnalysis?: boolean;
   aiScore?: number;
+  url?: string;
 }
 
 interface ProfileStats {
@@ -65,130 +67,125 @@ interface ProfileStats {
 }
 
 const CandidateDashboard: React.FC = () => {
-  const { user, profile } = useAuthStore();
+  const { user, profile, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'videos' | 'analytics' | 'profile'>('overview');
   const [selectedVideo, setSelectedVideo] = useState<VideoShowcase | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  const [stats] = useState<ProfileStats>({
-    totalViews: 1247,
-    profileScore: 87,
-    completionRate: 92,
-    skillsVerified: 12,
-    videosUploaded: 8,
-    jobMatches: 24,
-    responseRate: 78,
-    avgRating: 4.6,
-    aiAnalysesCompleted: 3
+  const [videos, setVideos] = useState<VideoShowcase[]>([]);
+  const [stats, setStats] = useState<ProfileStats>({
+    totalViews: 0,
+    profileScore: 0,
+    completionRate: 0,
+    skillsVerified: 0,
+    videosUploaded: 0,
+    jobMatches: 0,
+    responseRate: 0,
+    avgRating: 0,
+    aiAnalysesCompleted: 0
   });
-
-  const [videos] = useState<VideoShowcase[]>([
-    {
-      id: '1',
-      title: 'Professional Introduction',
-      description: 'A brief overview of my background, experience, and career goals in software development.',
-      thumbnail: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=225&fit=crop',
-      duration: '2:34',
-      views: 342,
-      likes: 28,
-      category: 'introduction',
-      status: 'published',
-      uploadedAt: '2024-01-15',
-      skills: ['Communication', 'Leadership'],
-      hasAIAnalysis: true,
-      aiScore: 84
-    },
-    {
-      id: '2',
-      title: 'React Development Skills Demo',
-      description: 'Live coding session demonstrating React hooks, state management, and component architecture.',
-      thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=225&fit=crop',
-      duration: '8:42',
-      views: 189,
-      likes: 15,
-      category: 'skills',
-      status: 'published',
-      uploadedAt: '2024-01-12',
-      skills: ['React', 'JavaScript', 'Frontend Development'],
-      hasAIAnalysis: true,
-      aiScore: 91
-    },
-    {
-      id: '3',
-      title: 'E-commerce Platform Project',
-      description: 'Walkthrough of a full-stack e-commerce application I built using React, Node.js, and MongoDB.',
-      thumbnail: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=225&fit=crop',
-      duration: '12:18',
-      views: 567,
-      likes: 42,
-      category: 'project',
-      status: 'published',
-      uploadedAt: '2024-01-08',
-      skills: ['Full-stack Development', 'Node.js', 'MongoDB', 'React'],
-      hasAIAnalysis: true,
-      aiScore: 88
-    },
-    {
-      id: '4',
-      title: 'Team Collaboration Testimonial',
-      description: 'Former colleague discussing our successful project collaboration and my technical leadership.',
-      thumbnail: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=400&h=225&fit=crop',
-      duration: '3:56',
-      views: 234,
-      likes: 19,
-      category: 'testimonial',
-      status: 'published',
-      uploadedAt: '2024-01-05',
-      skills: ['Leadership', 'Team Collaboration', 'Project Management'],
-      hasAIAnalysis: false
-    },
-    {
-      id: '5',
-      title: 'Python Data Analysis Demo',
-      description: 'Demonstrating data analysis and visualization techniques using Python, Pandas, and Matplotlib.',
-      thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=225&fit=crop',
-      duration: '6:23',
-      views: 156,
-      likes: 12,
-      category: 'skills',
-      status: 'processing',
-      uploadedAt: '2024-01-18',
-      skills: ['Python', 'Data Analysis', 'Pandas'],
-      hasAIAnalysis: false
-    }
-  ]);
 
   const [publicLink, setPublicLink] = useState<{ url: string; slug: string; expires_at: string } | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
+  // Load real data from Supabase
   useEffect(() => {
     if (!user) return;
-    const fetchPublicLink = async () => {
+    
+    const loadDashboardData = async () => {
+      setIsLoading(true);
       try {
         const supabase = getSupabaseClient();
-        const { data, error } = await supabase
-          .from('public_cv_links')
-          .select('*')
+        
+        // Load videos
+        const { data: videosData, error: videosError } = await supabase
+          .from('videos')
+          .select(`
+            *,
+            video_analyses(
+              id,
+              analysis_data,
+              processing_status
+            )
+          `)
           .eq('candidate_id', user.id)
-          .eq('revoked', false)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          const base = window.location.origin.includes('localhost')
-            ? 'http://localhost:5174/public'
-            : `${window.location.origin}/public`;
-          setPublicLink({ url: `${base}/${data.slug}`, slug: data.slug, expires_at: data.expires_at });
+        if (!videosError && videosData) {
+          const formattedVideos: VideoShowcase[] = videosData.map(video => ({
+            id: video.id,
+            title: video.title || 'Untitled Video',
+            description: video.description || '',
+            thumbnail: video.thumbnail_url || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=225&fit=crop',
+            duration: video.duration || '0:00',
+            views: video.view_count || 0,
+            likes: video.like_count || 0,
+            category: video.category || 'introduction',
+            status: video.status || 'draft',
+            uploadedAt: new Date(video.created_at).toLocaleDateString(),
+            skills: video.skills || [],
+            hasAIAnalysis: video.video_analyses && video.video_analyses.length > 0,
+            aiScore: video.video_analyses?.[0]?.analysis_data?.overallScore || null,
+            url: video.video_url
+          }));
+          setVideos(formattedVideos);
         }
+
+        // Calculate stats from real data
+        const totalViews = videosData?.reduce((sum, video) => sum + (video.view_count || 0), 0) || 0;
+        const aiAnalysesCount = videosData?.filter(video => video.video_analyses && video.video_analyses.length > 0).length || 0;
+        
+        setStats({
+          totalViews,
+          profileScore: profile?.profile_score || 0,
+          completionRate: profile?.completion_rate || 0,
+          skillsVerified: profile?.skills_verified || 0,
+          videosUploaded: videosData?.length || 0,
+          jobMatches: 0, // This would come from job matching service
+          responseRate: 0, // This would come from application tracking
+          avgRating: 0, // This would come from peer reviews
+          aiAnalysesCompleted: aiAnalysesCount
+        });
+
+        // Load public link
+        await fetchPublicLink();
+        
       } catch (error) {
-        console.error('Failed to fetch public link:', error);
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchPublicLink();
-  }, [user]);
+
+    loadDashboardData();
+  }, [user, profile]);
+
+  const fetchPublicLink = async () => {
+    if (!user) return;
+    
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('public_cv_links')
+        .select('*')
+        .eq('candidate_id', user.id)
+        .eq('revoked', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        const base = window.location.origin.includes('localhost')
+          ? 'http://localhost:5174/public'
+          : `${window.location.origin}/public`;
+        setPublicLink({ url: `${base}/${data.slug}`, slug: data.slug, expires_at: data.expires_at });
+      }
+    } catch (error) {
+      console.error('Failed to fetch public link:', error);
+    }
+  };
 
   const generateLink = async () => {
     setLinkLoading(true);
@@ -222,11 +219,6 @@ const CandidateDashboard: React.FC = () => {
     setLinkLoading(false);
   };
 
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 1000);
-  }, []);
-
   const handleNavigation = (path: string) => {
     if (!path) return;
 
@@ -237,7 +229,7 @@ const CandidateDashboard: React.FC = () => {
       return;
     }
 
-    const parts = path.split('/').filter(Boolean); // remove leading slash
+    const parts = path.split('/').filter(Boolean);
     const first = parts[0];
 
     // 1. In-app tab navigation
@@ -246,7 +238,7 @@ const CandidateDashboard: React.FC = () => {
       return;
     }
 
-    // 2. Quick mapping for well-known aliases (e.g. /jobs should open ReelHunter jobs page)
+    // 2. Quick mapping for well-known aliases
     if (first === 'jobs') {
       const hunter = apps.find(a => a.id === 'reel-hunter');
       if (hunter) {
@@ -262,7 +254,6 @@ const CandidateDashboard: React.FC = () => {
     });
 
     if (matchedApp) {
-      // Preserve any additional sub-path (e.g. /reelskills/some/route)
       const subPath = parts.slice(1).join('/');
       const target = subPath ? `${matchedApp.url}/${subPath}` : matchedApp.url;
       window.open(target, '_blank');
@@ -271,6 +262,96 @@ const CandidateDashboard: React.FC = () => {
 
     // 4. Fallback – navigate within current origin
     window.location.href = path;
+  };
+
+  const handleVideoUpload = () => {
+    // This would open a video upload modal or redirect to upload page
+    setShowUploadModal(true);
+    console.log('Opening video upload modal...');
+  };
+
+  const handleVideoRecord = () => {
+    // This would open a video recording interface
+    console.log('Opening video recording interface...');
+    // For now, just show upload modal
+    setShowUploadModal(true);
+  };
+
+  const handleWatchVideo = (video: VideoShowcase) => {
+    if (video.url) {
+      window.open(video.url, '_blank');
+    } else {
+      console.log(`Playing video: ${video.title}`);
+      // This would open a video player modal or navigate to video page
+    }
+  };
+
+  const handleShareVideo = async (video: VideoShowcase) => {
+    const shareUrl = `${window.location.origin}/video/${video.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: video.title,
+          text: video.description,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.log('Share cancelled');
+      }
+    } else {
+      // Fallback to clipboard
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Video link copied to clipboard!');
+    }
+  };
+
+  const handleVideoAnalysis = (video: VideoShowcase) => {
+    setSelectedVideo(video);
+    setShowAnalysisModal(true);
+  };
+
+  const handleDownloadVideos = async () => {
+    try {
+      // This would create a zip file of all videos
+      console.log('Downloading all videos...');
+      alert('Video download will start shortly. This feature is coming soon!');
+    } catch (error) {
+      console.error('Failed to download videos:', error);
+    }
+  };
+
+  const handleExportAIReports = async () => {
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('video_analyses')
+        .select('*')
+        .eq('candidate_id', user?.id);
+
+      if (!error && data) {
+        const reportData = JSON.stringify(data, null, 2);
+        const blob = new Blob([reportData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ai-analysis-reports-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Failed to export AI reports:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -308,10 +389,9 @@ const CandidateDashboard: React.FC = () => {
     return 'text-red-400';
   };
 
-  const handleVideoAnalysis = (video: VideoShowcase) => {
-    setSelectedVideo(video);
-    setShowAnalysisModal(true);
-  };
+  const filteredVideos = selectedCategory === 'all' 
+    ? videos 
+    : videos.filter(video => video.category === selectedCategory);
 
   const renderVideoCard = (video: VideoShowcase) => {
     const CategoryIcon = getCategoryIcon(video.category);
@@ -331,7 +411,7 @@ const CandidateDashboard: React.FC = () => {
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
           
           {/* AI Analysis Badge */}
-          {video.hasAIAnalysis && (
+          {video.hasAIAnalysis && video.aiScore && (
             <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-purple-600/80 backdrop-blur-sm rounded text-xs text-white">
               <Brain size={10} />
               AI: {video.aiScore}
@@ -375,11 +455,11 @@ const CandidateDashboard: React.FC = () => {
           </p>
 
           {/* AI Analysis Summary */}
-          {video.hasAIAnalysis && (
+          {video.hasAIAnalysis && video.aiScore && (
             <div className="mb-3 p-2 bg-purple-500/10 border border-purple-500/20 rounded">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-purple-300">AI Analysis Complete</span>
-                <span className={`font-bold ${getAIScoreColor(video.aiScore!)}`}>
+                <span className={`font-bold ${getAIScoreColor(video.aiScore)}`}>
                   Score: {video.aiScore}/100
                 </span>
               </div>
@@ -387,7 +467,7 @@ const CandidateDashboard: React.FC = () => {
           )}
 
           {/* Skills Tags */}
-          {video.skills && (
+          {video.skills && video.skills.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-3">
               {video.skills.slice(0, 3).map((skill) => (
                 <span key={skill} className="px-2 py-1 bg-blue-500/20 rounded text-xs text-blue-300">
@@ -421,7 +501,15 @@ const CandidateDashboard: React.FC = () => {
         {/* Hover Actions */}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
           <div className="flex gap-2">
-            <Button size="small" variant="outline" className="bg-slate-800/80 backdrop-blur-sm">
+            <Button 
+              size="small" 
+              variant="outline" 
+              className="bg-slate-800/80 backdrop-blur-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleWatchVideo(video);
+              }}
+            >
               <Play size={14} className="mr-1" />
               Watch
             </Button>
@@ -439,7 +527,15 @@ const CandidateDashboard: React.FC = () => {
                 AI Analyze
               </Button>
             )}
-            <Button size="small" variant="outline" className="bg-slate-800/80 backdrop-blur-sm">
+            <Button 
+              size="small" 
+              variant="outline" 
+              className="bg-slate-800/80 backdrop-blur-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleShareVideo(video);
+              }}
+            >
               <Share2 size={14} className="mr-1" />
               Share
             </Button>
@@ -448,6 +544,19 @@ const CandidateDashboard: React.FC = () => {
       </div>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className={styles.dashboard}>
+        <div className="max-w-7xl mx-auto p-8 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-slate-400">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.dashboard}>
@@ -465,7 +574,7 @@ const CandidateDashboard: React.FC = () => {
             </div>
             <div className="flex gap-3">
               <Button 
-                onClick={() => setShowUploadModal(true)}
+                onClick={handleVideoRecord}
                 className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-blue-500/25"
               >
                 <Camera size={16} className="mr-2" />
@@ -474,9 +583,17 @@ const CandidateDashboard: React.FC = () => {
               <Button 
                 variant="outline"
                 className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10"
+                onClick={() => setActiveTab('analytics')}
               >
                 <Brain size={16} className="mr-2" />
                 AI Insights
+              </Button>
+              <Button 
+                variant="outline"
+                className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                onClick={handleLogout}
+              >
+                Logout
               </Button>
             </div>
           </div>
@@ -642,7 +759,7 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </div>
                   <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                    <ChevronRight size={14} className="ml-auto" />
+                    <ExternalLink size={14} className="ml-auto" />
                     Manage Skills
                   </Button>
                 </Card.Header>
@@ -662,7 +779,7 @@ const CandidateDashboard: React.FC = () => {
                     </div>
                   </div>
                   <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                    <ChevronRight size={14} className="ml-auto" />
+                    <ExternalLink size={14} className="ml-auto" />
                     View Matches
                   </Button>
                 </Card.Header>
@@ -682,54 +799,22 @@ const CandidateDashboard: React.FC = () => {
                   <ChevronRight size={16} className="ml-1" />
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.slice(0, 3).map(renderVideoCard)}
-              </div>
+              {videos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {videos.slice(0, 3).map(renderVideoCard)}
+                </div>
+              ) : (
+                <Card className="text-center py-12">
+                  <Video size={48} className="mx-auto text-slate-400 mb-4" />
+                  <h3 className="text-xl font-bold text-white mb-2">No videos yet</h3>
+                  <p className="text-slate-400 mb-6">Start building your video portfolio to showcase your skills</p>
+                  <Button onClick={handleVideoRecord} className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                    <Camera size={16} className="mr-2" />
+                    Record Your First Video
+                  </Button>
+                </Card>
+              )}
             </div>
-
-            {/* AI Recommendations Preview */}
-            <Card className={styles.aiRecommendationsCard}>
-              <div className="flex items-center gap-3 mb-4">
-                <Brain size={24} className="text-purple-400" />
-                <h3 className="text-xl font-bold text-white">AI Recommendations</h3>
-              </div>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Content Suggestions</h4>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Create a project walkthrough video to showcase full-stack skills
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Add testimonials from colleagues to build credibility
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Record a problem-solving session to demonstrate thinking process
-                    </li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Optimization Tips</h4>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Improve video thumbnails for better click-through rates
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Add captions to increase accessibility and engagement
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Keep videos under 5 minutes for optimal viewer retention
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </Card>
           </div>
         )}
 
@@ -741,12 +826,13 @@ const CandidateDashboard: React.FC = () => {
                 <Button 
                   variant="outline"
                   className="border-slate-700/50 text-slate-300 hover:bg-slate-700/50"
+                  onClick={handleVideoUpload}
                 >
                   <Upload size={16} className="mr-2" />
                   Upload Video
                 </Button>
                 <Button 
-                  onClick={() => setShowUploadModal(true)}
+                  onClick={handleVideoRecord}
                   className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700"
                 >
                   <Camera size={16} className="mr-2" />
@@ -760,7 +846,12 @@ const CandidateDashboard: React.FC = () => {
               {['all', 'introduction', 'skills', 'project', 'testimonial'].map((category) => (
                 <button
                   key={category}
-                  className="px-4 py-2 bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700/50 rounded-xl whitespace-nowrap transition-all capitalize"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-xl whitespace-nowrap transition-all capitalize ${
+                    selectedCategory === category
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-slate-700/50'
+                  }`}
                 >
                   {category === 'all' ? 'All Videos' : category}
                 </button>
@@ -768,9 +859,28 @@ const CandidateDashboard: React.FC = () => {
             </div>
 
             {/* Videos Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {videos.map(renderVideoCard)}
-            </div>
+            {filteredVideos.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredVideos.map(renderVideoCard)}
+              </div>
+            ) : (
+              <Card className="text-center py-12">
+                <Video size={48} className="mx-auto text-slate-400 mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {selectedCategory === 'all' ? 'No videos yet' : `No ${selectedCategory} videos`}
+                </h3>
+                <p className="text-slate-400 mb-6">
+                  {selectedCategory === 'all' 
+                    ? 'Start building your video portfolio to showcase your skills'
+                    : `Create your first ${selectedCategory} video to get started`
+                  }
+                </p>
+                <Button onClick={handleVideoRecord} className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                  <Camera size={16} className="mr-2" />
+                  Record Video
+                </Button>
+              </Card>
+            )}
           </div>
         )}
 
@@ -778,117 +888,67 @@ const CandidateDashboard: React.FC = () => {
           <div className="space-y-8">
             <h2 className="text-2xl font-bold text-white">AI Analytics Dashboard</h2>
             
-            {/* AI Analytics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className={styles.analyticsCard}>
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Brain size={20} className="text-purple-400" />
-                  AI Video Performance
-                </h3>
-                <div className="space-y-4">
-                  {videos.filter(v => v.hasAIAnalysis).map((video) => (
-                    <div key={video.id} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium">{video.title}</p>
-                        <p className="text-sm text-slate-400">{video.views} views • AI Score: {video.aiScore}/100</p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${getAIScoreColor(video.aiScore!)}`}>
-                          {video.aiScore}%
+            {stats.aiAnalysesCompleted > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className={styles.analyticsCard}>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Brain size={20} className="text-purple-400" />
+                    AI Video Performance
+                  </h3>
+                  <div className="space-y-4">
+                    {videos.filter(v => v.hasAIAnalysis).map((video) => (
+                      <div key={video.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-white font-medium">{video.title}</p>
+                          <p className="text-sm text-slate-400">{video.views} views • AI Score: {video.aiScore}/100</p>
                         </div>
-                        <div className="text-xs text-slate-400">AI Rating</div>
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${getAIScoreColor(video.aiScore!)}`}>
+                            {video.aiScore}%
+                          </div>
+                          <div className="text-xs text-slate-400">AI Rating</div>
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card className={styles.analyticsCard}>
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <Target size={20} className="text-blue-400" />
+                    Skill Analysis Summary
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Videos Analyzed</span>
+                      <span className="text-blue-300 font-bold">{stats.aiAnalysesCompleted}</span>
                     </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className={styles.analyticsCard}>
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Target size={20} className="text-blue-400" />
-                  Skill Analysis Summary
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Technical Skills Detected</span>
-                    <span className="text-blue-300 font-bold">15</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Skills Verified</span>
+                      <span className="text-blue-300 font-bold">{stats.skillsVerified}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Profile Completion</span>
+                      <span className="text-blue-300 font-bold">{stats.completionRate}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Total Views</span>
+                      <span className="text-blue-300 font-bold">{stats.totalViews}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Avg Confidence Score</span>
-                    <span className="text-blue-300 font-bold">87%</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Communication Rating</span>
-                    <span className="text-blue-300 font-bold">4.2/5</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Industry Percentile</span>
-                    <span className="text-blue-300 font-bold">78th</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            {/* Enhanced AI Recommendations */}
-            <Card className={styles.aiRecommendationsCard}>
-              <div className="flex items-center gap-3 mb-4">
-                <Brain size={24} className="text-purple-400" />
-                <h3 className="text-xl font-bold text-white">Advanced AI Recommendations</h3>
+                </Card>
               </div>
-              <div className="grid md:grid-cols-3 gap-6">
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Technical Skills</h4>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Demonstrate system design thinking
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Show testing methodologies
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Include performance optimization examples
-                    </li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Communication</h4>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Improve eye contact with camera
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Use more concrete examples
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Practice clearer articulation
-                    </li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-purple-300 mb-3">Content Strategy</h4>
-                  <ul className="space-y-2 text-sm text-slate-300">
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Create industry-specific content
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Add more project walkthroughs
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <ChevronRight size={14} className="text-purple-400" />
-                      Include team collaboration examples
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </Card>
+            ) : (
+              <Card className="text-center py-12">
+                <Brain size={48} className="mx-auto text-purple-400 mb-4" />
+                <h3 className="text-xl font-bold text-white mb-2">No AI Analysis Yet</h3>
+                <p className="text-slate-400 mb-6">Upload and publish videos to get AI-powered insights</p>
+                <Button onClick={() => setActiveTab('videos')} className="bg-gradient-to-r from-purple-600 to-blue-600">
+                  <Video size={16} className="mr-2" />
+                  View Videos
+                </Button>
+              </Card>
+            )}
           </div>
         )}
 
@@ -976,17 +1036,34 @@ const CandidateDashboard: React.FC = () => {
                 <Card className={styles.settingsCard}>
                   <h3 className="text-lg font-bold text-white mb-4">Export & Backup</h3>
                   <div className="space-y-3">
-                    <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                      onClick={handleDownloadVideos}
+                    >
                       <Download size={16} className="mr-2" />
                       Download All Videos
                     </Button>
-                    <Button variant="outline" className="w-full border-purple-600/50 text-purple-300 hover:bg-purple-500/10">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-purple-600/50 text-purple-300 hover:bg-purple-500/10"
+                      onClick={handleExportAIReports}
+                    >
                       <Brain size={16} className="mr-2" />
                       Export AI Analysis Reports
                     </Button>
-                    <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                      onClick={() => {
+                        if (publicLink) {
+                          navigator.clipboard.writeText(publicLink.url);
+                          alert('Portfolio link copied to clipboard!');
+                        }
+                      }}
+                    >
                       <Share2 size={16} className="mr-2" />
-                      Export Portfolio Link
+                      Share Portfolio Link
                     </Button>
                   </div>
                 </Card>
@@ -1002,11 +1079,21 @@ const CandidateDashboard: React.FC = () => {
                     readOnly
                     className="flex-1 bg-transparent text-slate-300 truncate focus:outline-none"
                   />
-                  <Button variant="outline" size="small" onClick={() => navigator.clipboard.writeText(publicLink.url)}>
+                  <Button 
+                    variant="outline" 
+                    size="small" 
+                    onClick={() => navigator.clipboard.writeText(publicLink.url)}
+                  >
                     <Copy size={14} className="mr-1" />
                     Copy
                   </Button>
-                  <Button variant="outline" size="small" onClick={revokeLink} disabled={linkLoading} className="border-red-500/50 text-red-300 hover:bg-red-500/10">
+                  <Button 
+                    variant="outline" 
+                    size="small" 
+                    onClick={revokeLink} 
+                    disabled={linkLoading} 
+                    className="border-red-500/50 text-red-300 hover:bg-red-500/10"
+                  >
                     {linkLoading ? 'Revoking...' : 'Revoke'}
                   </Button>
                 </div>
@@ -1031,6 +1118,30 @@ const CandidateDashboard: React.FC = () => {
           video={selectedVideo}
           candidateId={user.id}
         />
+      )}
+
+      {/* Upload Modal Placeholder */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Upload Video</h3>
+              <button 
+                onClick={() => setShowUploadModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-slate-400 mb-6">Video upload functionality coming soon!</p>
+            <Button 
+              onClick={() => setShowUploadModal(false)}
+              className="w-full"
+            >
+              Close
+            </Button>
+          </Card>
+        </div>
       )}
     </div>
   );
