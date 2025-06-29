@@ -23,7 +23,9 @@ import {
   ReelSkillsLink, 
   ReelProjectsLink, 
   ReelHunterLink,
-  RecruitmentCTA
+  RecruitmentCTA,
+  CreatePortfolioCTA,
+  ReelCVDirectLink
 } from './components/ui';
 
 interface PublicLinkRow {
@@ -213,8 +215,8 @@ const PublicCV: React.FC = () => {
             <h1 className="text-xl font-bold mb-3 text-white">Portfolio Not Found</h1>
             <p className="mb-6 text-slate-400">{error || 'This portfolio link is invalid or has expired.'}</p>
             <div className="space-y-3">
-              <Button as="a" href="https://www.reelapps.co.za" variant="primary">
-                Visit ReelApps
+              <Button as="a" href="https://reelcv.reelapps.co.za" variant="primary">
+                Create Your ReelCV
               </Button>
               <div className="text-sm text-slate-500">
                 <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" /> - 
@@ -237,7 +239,8 @@ const PublicCV: React.FC = () => {
             Skills Portfolio - Beyond Traditional Resumes
           </div>
           <div className="text-xs text-slate-500">
-            Powered by <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" />
+            Powered by <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" /> | 
+            Create yours at <ReelCVDirectLink className="text-blue-400 hover:text-blue-300" />
           </div>
         </div>
 
@@ -510,6 +513,9 @@ const PublicCV: React.FC = () => {
               </Card>
             )}
 
+            {/* Create Portfolio CTA */}
+            <CreatePortfolioCTA />
+
             {/* ReelApps Ecosystem Promotion */}
             <Card className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border-green-500/30">
               <div className="p-6">
@@ -526,6 +532,10 @@ const PublicCV: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Briefcase size={14} className="text-green-400" />
                     <ReelHunterLink className="text-green-400 hover:text-green-300" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Globe size={14} className="text-blue-400" />
+                    <ReelCVDirectLink className="text-blue-400 hover:text-blue-300" />
                   </div>
                 </div>
                 <div className="mt-4 pt-3 border-t border-green-500/20">
@@ -571,10 +581,14 @@ const PublicCV: React.FC = () => {
           <p className="text-slate-400 text-sm mb-4">
             Redefining talent showcase beyond traditional resumes
           </p>
-          <div className="flex justify-center gap-6 text-sm">
+          <div className="flex justify-center gap-6 text-sm flex-wrap">
+            <ReelCVDirectLink className="text-blue-400 hover:text-blue-300" />
             <ReelSkillsLink className="text-blue-400 hover:text-blue-300" />
             <ReelProjectsLink className="text-purple-400 hover:text-purple-300" />
             <ReelHunterLink className="text-green-400 hover:text-green-300" />
+          </div>
+          <div className="mt-4 text-xs text-slate-500">
+            Create your own portfolio at <ReelCVDirectLink className="text-blue-400 hover:text-blue-300" />
           </div>
         </div>
       </div>

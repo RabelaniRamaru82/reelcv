@@ -24,7 +24,8 @@ import {
   ReelAppsSolutionsLink,
   ReelAppsBlogLink,
   SkillVerificationCTA,
-  ProjectShowcaseCTA
+  ProjectShowcaseCTA,
+  ReelCVDirectLink
 } from './components/ui';
 import styles from './CandidateDashboard.module.css';
 
@@ -317,7 +318,7 @@ const CandidateDashboard: React.FC = () => {
               </p>
               <div className="mt-3 text-sm text-slate-400">
                 Powered by <ReelAppsMainLink className="text-blue-400 hover:text-blue-300" /> - 
-                The complete talent management ecosystem
+                The complete talent management ecosystem | Visit <ReelCVDirectLink className="text-blue-400 hover:text-blue-300" />
               </div>
             </div>
             <div className="flex gap-3">
@@ -575,6 +576,8 @@ const CandidateDashboard: React.FC = () => {
                 </div>
                 <div className="mt-4 text-center">
                   <ReelAppsMainLink className="text-blue-400 hover:text-blue-300 font-medium" />
+                  <span className="text-slate-400 mx-2">|</span>
+                  <ReelCVDirectLink className="text-blue-400 hover:text-blue-300 font-medium" />
                 </div>
               </div>
             </Card>

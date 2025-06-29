@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Zap, Target, Award, Users, TrendingUp } from 'lucide-react';
+import { ExternalLink, Zap, Target, Award, Users, TrendingUp, Globe } from 'lucide-react';
 
 interface SEOLinkProps {
   href: string;
@@ -35,6 +35,17 @@ export const ReelAppsMainLink: React.FC<{ className?: string }> = ({ className =
     title="Visit ReelApps - The Future of Talent Management"
   >
     ReelApps Platform
+  </SEOLink>
+);
+
+export const ReelCVDirectLink: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <SEOLink 
+    href="https://reelcv.reelapps.co.za" 
+    className={className}
+    title="ReelCV - Create Your Skills Portfolio | Beyond Traditional Resumes"
+  >
+    <Globe size={14} />
+    Create Your ReelCV Portfolio
   </SEOLink>
 );
 
@@ -138,5 +149,14 @@ export const RecruitmentCTA: React.FC = () => (
       <strong>Looking to hire talent like this?</strong> Find and connect with top candidates efficiently.
     </p>
     <ReelHunterLink className="text-sm font-medium" />
+  </div>
+);
+
+export const CreatePortfolioCTA: React.FC = () => (
+  <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg p-4 my-4">
+    <p className="text-blue-300 text-sm mb-2">
+      <strong>Want to create your own skills portfolio?</strong> Build a professional showcase beyond traditional resumes.
+    </p>
+    <ReelCVDirectLink className="text-sm font-medium" />
   </div>
 );
