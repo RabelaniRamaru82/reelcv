@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import styles from './AuthModal.module.css';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -58,37 +59,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div 
-        className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 w-full max-w-md"
-        style={{ 
-          background: 'radial-gradient(ellipse at center, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%)',
-          backdropFilter: 'blur(20px)'
-        }}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContainer}>
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>
             {mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className={styles.closeButton}
           >
             <X size={24} />
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4">
-            <p className="text-red-300 text-sm">{error}</p>
+          <div className={styles.errorMessage}>
+            <p className={styles.errorText}>{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className={styles.form}>
           {mode === 'signup' && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
                   First Name
                 </label>
                 <input
@@ -96,12 +91,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   name="firstName"
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={styles.input}
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>
                   Last Name
                 </label>
                 <input
@@ -109,15 +104,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   name="lastName"
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={styles.input}
                   required
                 />
               </div>
             </>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>
               Email
             </label>
             <input
@@ -125,14 +120,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={styles.input}
               required
             />
           </div>
 
           {mode !== 'reset' && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>
                 Password
               </label>
               <input
@@ -140,15 +135,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={styles.input}
                 required
               />
             </div>
           )}
 
           {mode === 'signup' && (
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+            <div className={styles.inputGroup}>
+              <label className={styles.label}>
                 Confirm Password
               </label>
               <input
@@ -156,7 +151,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
-                className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={styles.input}
                 required
               />
             </div>
@@ -165,25 +160,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+            className={styles.submitButton}
           >
             {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Email'}
           </button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className={styles.footer}>
           {mode === 'login' ? (
             <>
               <button
                 onClick={() => setMode('signup')}
-                className="text-blue-400 hover:text-blue-300 text-sm"
+                className={styles.footerLink}
               >
                 Don't have an account? Sign up
               </button>
               <br />
               <button
                 onClick={() => setMode('reset')}
-                className="text-slate-400 hover:text-slate-300 text-sm mt-2"
+                className={styles.footerSecondary}
               >
                 Forgot password?
               </button>
@@ -191,14 +186,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : mode === 'signup' ? (
             <button
               onClick={() => setMode('login')}
-              className="text-blue-400 hover:text-blue-300 text-sm"
+              className={styles.footerLink}
             >
               Already have an account? Sign in
             </button>
           ) : (
             <button
               onClick={() => setMode('login')}
-              className="text-blue-400 hover:text-blue-300 text-sm"
+              className={styles.footerLink}
             >
               Back to sign in
             </button>
