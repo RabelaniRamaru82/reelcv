@@ -68,7 +68,7 @@ const CandidateDashboard: React.FC = () => {
     showVerificationBadges: true
   });
 
-  // Load data from external sources (ReelSkills, ReelProjects)
+  // Load data from database and external sources
   useEffect(() => {
     if (!user) return;
     
@@ -78,8 +78,8 @@ const CandidateDashboard: React.FC = () => {
         // Load public link
         await fetchPublicLink();
         
-        // Load aggregated stats from ReelSkills and ReelProjects
-        await loadExternalStats();
+        // Load real stats from database
+        await loadRealStats();
         
         // Load portfolio settings
         await loadPortfolioSettings();
@@ -94,25 +94,58 @@ const CandidateDashboard: React.FC = () => {
     loadDashboardData();
   }, [user]);
 
-  const loadExternalStats = async () => {
-    // This would fetch data from ReelSkills and ReelProjects APIs
-    // For now, we'll simulate the data structure
+  const loadRealStats = async () => {
+    if (!user) return;
+    
     try {
-      // In real implementation, these would be API calls to:
-      // - ReelSkills API for verified skills count
-      // - ReelProjects API for completed projects count
-      // - Analytics for profile views and engagement
+      const supabase = getSupabaseClient();
       
+      // Get total views from all public links
+      const { data: linksData, error: linksError } = await supabase
+        .from('public_cv_links')
+        .select('view_count')
+        .eq('candidate_id', user.id);
+
+      const totalViews = linksData?.reduce((sum, link) => sum + (link.view_count || 0), 0) || 0;
+
+      // Get count of active links (for link shares metric)
+      const { data: activeLinksData, error: activeLinksError } = await supabase
+        .from('public_cv_links')
+        .select('id')
+        .eq('candidate_id', user.id)
+        .eq('revoked', false);
+
+      const linkShares = activeLinksData?.length || 0;
+
+      // Calculate profile completeness based on available data
+      let completenessScore = 0;
+      if (profile?.first_name) completenessScore += 20;
+      if (profile?.last_name) completenessScore += 20;
+      if (profile?.title) completenessScore += 15;
+      if (profile?.bio) completenessScore += 15;
+      if (profile?.location) completenessScore += 10;
+      if (profile?.email) completenessScore += 10;
+      if (profile?.linkedin_url) completenessScore += 5;
+      if (profile?.github_url) completenessScore += 5;
+
+      // Calculate a basic portfolio score (this would be more sophisticated in a real app)
+      const portfolioScore = Math.min(100, Math.round(
+        (completenessScore * 0.4) + 
+        (Math.min(totalViews / 10, 30)) + 
+        (linkShares * 5)
+      ));
+
       setStats({
-        totalViews: 1247, // From public CV link analytics
-        profileScore: 87, // Calculated from ReelSkills + ReelProjects data
-        skillsFromReelSkills: 12, // From ReelSkills API
-        projectsFromReelProjects: 8, // From ReelProjects API
-        linkShares: 24, // From link sharing analytics
-        profileCompleteness: 92 // Based on data completeness across platforms
+        totalViews,
+        profileScore: portfolioScore,
+        skillsFromReelSkills: 0, // Would come from ReelSkills API
+        projectsFromReelProjects: 0, // Would come from ReelProjects API
+        linkShares,
+        profileCompleteness: completenessScore
       });
     } catch (error) {
-      console.error('Failed to load external stats:', error);
+      console.error('Failed to load real stats:', error);
+      // Keep default values on error
     }
   };
 
@@ -148,6 +181,8 @@ const CandidateDashboard: React.FC = () => {
     setSettingsLoading(true);
     try {
       const updatedSettings = { ...portfolioSettings, ...newSettings };
+      
+      // Optimistically update the UI
       setPortfolioSettings(updatedSettings);
 
       const supabase = getSupabaseClient();
@@ -240,6 +275,9 @@ const CandidateDashboard: React.FC = () => {
           views: 0,
           created_at: new Date().toISOString()
         });
+        
+        // Refresh stats after generating new link
+        await loadRealStats();
       }
     } catch (error) {
       console.error('Failed to generate link:', error);
@@ -257,6 +295,8 @@ const CandidateDashboard: React.FC = () => {
         .update({ revoked: true })
         .eq('slug', publicLink.slug);
       setPublicLink(null);
+      // Refresh stats after revoking link
+      await loadRealStats();
     } catch (error) {
       console.error('Failed to revoke link:', error);
     }
@@ -350,7 +390,7 @@ const CandidateDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Stats Grid - Data from ReelSkills & ReelProjects */}
+          {/* Stats Grid - Real data from database */}
           <div className={styles.statsGrid}>
             <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
@@ -367,7 +407,7 @@ const CandidateDashboard: React.FC = () => {
                 <Zap size={16} className="text-blue-400" />
               </div>
               <div className={styles.statValue}>{stats.linkShares}</div>
-              <div className={styles.statLabel}>Link Shares</div>
+              <div className={styles.statLabel}>Active Links</div>
             </div>
 
             <div className={styles.statCard}>
@@ -498,7 +538,7 @@ const CandidateDashboard: React.FC = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-green-300">{stats.linkShares}</div>
-                  <div className="text-sm text-slate-400">Shares</div>
+                  <div className="text-sm text-slate-400">Active Links</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-300">{stats.profileScore}</div>
