@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './Card.module.css';
 
 interface CardProps {
   children: React.ReactNode;
@@ -18,20 +19,24 @@ const Card: React.FC<CardProps> & { Header: React.FC<CardHeaderProps> } = ({
   interactive = false,
   onClick
 }) => {
-  const baseClasses = 'bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6';
-  const interactiveClasses = interactive ? 'cursor-pointer hover:border-slate-600/50 transition-colors' : '';
-  const classes = `${baseClasses} ${interactiveClasses} ${className}`;
+  const cardClasses = [
+    styles.card,
+    interactive ? styles.cardInteractive : '',
+    className
+  ].filter(Boolean).join(' ');
 
   return (
-    <div className={classes} onClick={onClick}>
+    <div className={cardClasses} onClick={onClick}>
       {children}
     </div>
   );
 };
 
 const CardHeader: React.FC<CardHeaderProps> = ({ children, className = '' }) => {
+  const headerClasses = [styles.cardHeader, className].filter(Boolean).join(' ');
+  
   return (
-    <div className={`mb-4 ${className}`}>
+    <div className={headerClasses}>
       {children}
     </div>
   );
