@@ -54,6 +54,7 @@ const CandidateDashboard: React.FC = () => {
   const [publicLink, setPublicLink] = useState<PublicLink | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
 
   const [portfolioSettings, setPortfolioSettings] = useState<PortfolioSettings>({
     linkExpiration: '1-year',
@@ -184,6 +185,8 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const generateLink = async () => {
+    if (!user) return;
+    
     setLinkLoading(true);
     try {
       const supabase = getSupabaseClient();
@@ -224,17 +227,24 @@ const CandidateDashboard: React.FC = () => {
   };
 
   const revokeLink = async () => {
-    if (!publicLink) return;
+    if (!publicLink || !user) return;
+    
     setLinkLoading(true);
     try {
       const supabase = getSupabaseClient();
-      await supabase
+      const { error } = await supabase
         .from('public_cv_links')
         .update({ revoked: true })
-        .eq('slug', publicLink.slug);
-      setPublicLink(null);
-      // Refresh stats after revoking link
-      await refreshStats();
+        .eq('slug', publicLink.slug)
+        .eq('candidate_id', user.id);
+        
+      if (!error) {
+        setPublicLink(null);
+        // Refresh stats after revoking link
+        await refreshStats();
+      } else {
+        console.error('Failed to revoke link:', error);
+      }
     } catch (error) {
       console.error('Failed to revoke link:', error);
     }
@@ -244,19 +254,39 @@ const CandidateDashboard: React.FC = () => {
   const handleShareLink = async () => {
     if (!publicLink) return;
     
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share({
           title: `${profile?.first_name || 'Professional'}'s Skills Portfolio`,
           text: 'Check out my proven skills and projects portfolio',
           url: publicLink.url,
         });
-      } catch (error) {
-        console.log('Share cancelled');
+      } else {
+        await navigator.clipboard.writeText(publicLink.url);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
       }
-    } else {
+    } catch (error) {
+      // Fallback to clipboard copy if share fails
+      try {
+        await navigator.clipboard.writeText(publicLink.url);
+        setShareSuccess(true);
+        setTimeout(() => setShareSuccess(false), 2000);
+      } catch (clipboardError) {
+        console.error('Failed to copy to clipboard:', clipboardError);
+      }
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!publicLink) return;
+    
+    try {
       await navigator.clipboard.writeText(publicLink.url);
-      alert('Portfolio link copied to clipboard!');
+      setShareSuccess(true);
+      setTimeout(() => setShareSuccess(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
     }
   };
 
@@ -420,22 +450,28 @@ const CandidateDashboard: React.FC = () => {
                       <Button 
                         variant="outline" 
                         size="small" 
-                        onClick={() => navigator.clipboard.writeText(publicLink.url)}
+                        onClick={handleCopyLink}
+                        className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
                       >
                         <Copy size={14} className="mr-1" />
-                        Copy
+                        {shareSuccess ? 'Copied!' : 'Copy'}
                       </Button>
                     </div>
                     
                     <div className="flex gap-3 justify-center">
-                      <Button onClick={handleShareLink} className="bg-gradient-to-r from-green-600 to-blue-600">
+                      <Button 
+                        onClick={handleShareLink} 
+                        className="bg-gradient-to-r from-green-600 to-blue-600"
+                        disabled={linkLoading}
+                      >
                         <Share2 size={16} className="mr-2" />
-                        Share Portfolio
+                        {shareSuccess ? 'Shared!' : 'Share Portfolio'}
                       </Button>
                       <Button 
                         variant="outline"
                         onClick={() => window.open(publicLink.url, '_blank')}
                         className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                        disabled={linkLoading}
                       >
                         <ExternalLink size={16} className="mr-2" />
                         Preview
@@ -698,10 +734,11 @@ const CandidateDashboard: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="small" 
-                      onClick={() => navigator.clipboard.writeText(publicLink.url)}
+                      onClick={handleCopyLink}
+                      className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
                     >
                       <Copy size={14} className="mr-1" />
-                      Copy
+                      {shareSuccess ? 'Copied!' : 'Copy'}
                     </Button>
                   </div>
                   
@@ -728,6 +765,7 @@ const CandidateDashboard: React.FC = () => {
                     <Button 
                       onClick={() => window.open(publicLink.url, '_blank')}
                       className="bg-gradient-to-r from-blue-600 to-purple-600"
+                      disabled={linkLoading}
                     >
                       <ExternalLink size={16} className="mr-2" />
                       Preview Portfolio
@@ -736,9 +774,10 @@ const CandidateDashboard: React.FC = () => {
                       variant="outline"
                       onClick={handleShareLink}
                       className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                      disabled={linkLoading}
                     >
                       <Share2 size={16} className="mr-2" />
-                      Share Link
+                      {shareSuccess ? 'Shared!' : 'Share Link'}
                     </Button>
                   </div>
                 </div>
