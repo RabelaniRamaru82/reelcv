@@ -1,8 +1,6 @@
-/// <reference types="vite/client" />
-// @ts-nocheck
 import React, { useEffect, useState } from 'react';
-import { useAuthStore, initializeSupabase } from '@reelapps/auth';
-import { AppWrapper } from '@reelapps/ui';
+import { useAuthStore, initializeSupabase } from './hooks/useAuth';
+import { AppWrapper } from './components/ui/AppWrapper';
 import CandidateDashboard from './CandidateDashboard';
 import PublicCV from './PublicCV';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -12,7 +10,6 @@ const PrivateApp: React.FC = () => {
   const {
     initialize,
     isLoading,
-    isInitializing: storeInitializing,
     isAuthenticated,
     user,
     login,
@@ -50,13 +47,13 @@ const PrivateApp: React.FC = () => {
   return (
     <AppWrapper
       isAuthenticated={isAuthenticated}
-      isInitializing={storeInitializing ?? false}
+      isInitializing={false}
       user={user}
-      error={error as string | null}
+      error={error}
       onLogin={login}
       onSignup={signup}
       onPasswordReset={sendPasswordResetEmail}
-      isLoading={isLoading ?? false}
+      isLoading={isLoading}
     >
       <CandidateDashboard />
     </AppWrapper>
@@ -74,4 +71,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

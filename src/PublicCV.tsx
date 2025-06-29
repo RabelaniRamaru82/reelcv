@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { Card, Button } from '@reelapps/ui';
+import { Card, Button } from './components/ui';
 
 interface PublicLinkRow {
   candidate_id: string;
@@ -67,4 +67,4 @@ const PublicCV: React.FC = () => {
   );
 };
 
-export default PublicCV; 
+export default PublicCV;

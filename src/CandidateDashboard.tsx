@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '@reelapps/auth';
-import { Card, Button } from '@reelapps/ui';
+import { useAuthStore } from './hooks/useAuth';
+import { Card, Button } from './components/ui';
 import { 
   Video, 
   Star, 
@@ -30,8 +30,8 @@ import {
   Plus,
   Copy
 } from 'lucide-react';
-import { apps } from '@reelapps/config';
-import { getSupabaseClient } from '@reelapps/auth';
+import { apps } from './config/apps';
+import { getSupabaseClient } from './hooks/useAuth';
 
 interface VideoShowcase {
   id: string;
@@ -144,27 +144,31 @@ const CandidateDashboard: React.FC = () => {
     }
   ]);
 
-  const supabase = getSupabaseClient();
   const [publicLink, setPublicLink] = useState<{ url: string; slug: string; expires_at: string } | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const fetchPublicLink = async () => {
-      const { data, error } = await supabase
-        .from('public_cv_links')
-        .select('*')
-        .eq('candidate_id', user.id)
-        .eq('revoked', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      try {
+        const supabase = getSupabaseClient();
+        const { data, error } = await supabase
+          .from('public_cv_links')
+          .select('*')
+          .eq('candidate_id', user.id)
+          .eq('revoked', false)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      if (!error && data) {
-        const base = window.location.origin.includes('localhost')
-          ? 'http://localhost:5174/public'
-          : `${window.location.origin}/public`;
-        setPublicLink({ url: `${base}/${data.slug}`, slug: data.slug, expires_at: data.expires_at });
+        if (!error && data) {
+          const base = window.location.origin.includes('localhost')
+            ? 'http://localhost:5174/public'
+            : `${window.location.origin}/public`;
+          setPublicLink({ url: `${base}/${data.slug}`, slug: data.slug, expires_at: data.expires_at });
+        }
+      } catch (error) {
+        console.error('Failed to fetch public link:', error);
       }
     };
     fetchPublicLink();
@@ -172,11 +176,16 @@ const CandidateDashboard: React.FC = () => {
 
   const generateLink = async () => {
     setLinkLoading(true);
-    const { data, error } = await supabase.functions.invoke('generate-cv-link', {
-      body: { expiresInDays: 30 },
-    });
-    if (!error) {
-      setPublicLink(data as any);
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase.functions.invoke('generate-cv-link', {
+        body: { expiresInDays: 30 },
+      });
+      if (!error) {
+        setPublicLink(data as any);
+      }
+    } catch (error) {
+      console.error('Failed to generate link:', error);
     }
     setLinkLoading(false);
   };
@@ -184,11 +193,16 @@ const CandidateDashboard: React.FC = () => {
   const revokeLink = async () => {
     if (!publicLink) return;
     setLinkLoading(true);
-    await supabase
-      .from('public_cv_links')
-      .update({ revoked: true })
-      .eq('slug', publicLink.slug);
-    setPublicLink(null);
+    try {
+      const supabase = getSupabaseClient();
+      await supabase
+        .from('public_cv_links')
+        .update({ revoked: true })
+        .eq('slug', publicLink.slug);
+      setPublicLink(null);
+    } catch (error) {
+      console.error('Failed to revoke link:', error);
+    }
     setLinkLoading(false);
   };
 
