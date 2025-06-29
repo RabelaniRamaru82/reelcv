@@ -34,12 +34,22 @@ interface ProfileStats {
   profileCompleteness: number;
 }
 
+interface PortfolioSettings {
+  linkExpiration: string;
+  trackAnalytics: boolean;
+  allowPublicIndexing: boolean;
+  includeReelSkills: boolean;
+  includeReelProjects: boolean;
+  showVerificationBadges: boolean;
+}
+
 const CandidateDashboard: React.FC = () => {
   const { user, profile, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [publicLink, setPublicLink] = useState<PublicLink | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [stats, setStats] = useState<ProfileStats>({
     totalViews: 0,
     profileScore: 0,
@@ -47,6 +57,15 @@ const CandidateDashboard: React.FC = () => {
     projectsFromReelProjects: 0,
     linkShares: 0,
     profileCompleteness: 0
+  });
+
+  const [portfolioSettings, setPortfolioSettings] = useState<PortfolioSettings>({
+    linkExpiration: '1-year',
+    trackAnalytics: true,
+    allowPublicIndexing: false,
+    includeReelSkills: true,
+    includeReelProjects: true,
+    showVerificationBadges: true
   });
 
   // Load data from external sources (ReelSkills, ReelProjects)
@@ -61,6 +80,9 @@ const CandidateDashboard: React.FC = () => {
         
         // Load aggregated stats from ReelSkills and ReelProjects
         await loadExternalStats();
+        
+        // Load portfolio settings
+        await loadPortfolioSettings();
         
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
@@ -91,6 +113,68 @@ const CandidateDashboard: React.FC = () => {
       });
     } catch (error) {
       console.error('Failed to load external stats:', error);
+    }
+  };
+
+  const loadPortfolioSettings = async () => {
+    if (!user) return;
+    
+    try {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from('portfolio_settings')
+        .select('*')
+        .eq('candidate_id', user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setPortfolioSettings({
+          linkExpiration: data.link_expiration || '1-year',
+          trackAnalytics: data.track_analytics ?? true,
+          allowPublicIndexing: data.allow_public_indexing ?? false,
+          includeReelSkills: data.include_reel_skills ?? true,
+          includeReelProjects: data.include_reel_projects ?? true,
+          showVerificationBadges: data.show_verification_badges ?? true
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load portfolio settings:', error);
+    }
+  };
+
+  const savePortfolioSettings = async (newSettings: Partial<PortfolioSettings>) => {
+    if (!user) return;
+    
+    setSettingsLoading(true);
+    try {
+      const updatedSettings = { ...portfolioSettings, ...newSettings };
+      setPortfolioSettings(updatedSettings);
+
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from('portfolio_settings')
+        .upsert({
+          candidate_id: user.id,
+          link_expiration: updatedSettings.linkExpiration,
+          track_analytics: updatedSettings.trackAnalytics,
+          allow_public_indexing: updatedSettings.allowPublicIndexing,
+          include_reel_skills: updatedSettings.includeReelSkills,
+          include_reel_projects: updatedSettings.includeReelProjects,
+          show_verification_badges: updatedSettings.showVerificationBadges,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Failed to save settings:', error);
+        // Revert on error
+        setPortfolioSettings(portfolioSettings);
+      }
+    } catch (error) {
+      console.error('Failed to save portfolio settings:', error);
+      // Revert on error
+      setPortfolioSettings(portfolioSettings);
+    } finally {
+      setSettingsLoading(false);
     }
   };
 
@@ -130,8 +214,18 @@ const CandidateDashboard: React.FC = () => {
     setLinkLoading(true);
     try {
       const supabase = getSupabaseClient();
+      
+      // Calculate expiration based on settings
+      const expirationDays = portfolioSettings.linkExpiration === '1-year' ? 365 :
+                           portfolioSettings.linkExpiration === '6-months' ? 180 :
+                           portfolioSettings.linkExpiration === '3-months' ? 90 : 
+                           null; // Never expire
+      
       const { data, error } = await supabase.functions.invoke('generate-cv-link', {
-        body: { expiresInDays: 365 }, // Long-term links for professional sharing
+        body: { 
+          expiresInDays: expirationDays,
+          settings: portfolioSettings
+        },
       });
       
       if (!error && data) {
@@ -195,6 +289,27 @@ const CandidateDashboard: React.FC = () => {
       console.error('Logout failed:', error);
     }
   };
+
+  // Toggle component for settings
+  const ToggleSwitch: React.FC<{
+    enabled: boolean;
+    onChange: (enabled: boolean) => void;
+    disabled?: boolean;
+  }> = ({ enabled, onChange, disabled = false }) => (
+    <button
+      onClick={() => !disabled && onChange(!enabled)}
+      disabled={disabled || settingsLoading}
+      className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${
+        enabled ? 'bg-blue-600' : 'bg-slate-600'
+      } ${disabled || settingsLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <div
+        className={`w-5 h-5 bg-white rounded-full absolute top-0.5 transition-transform duration-200 ${
+          enabled ? 'translate-x-6' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  );
 
   if (isLoading) {
     return (
@@ -454,24 +569,31 @@ const CandidateDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-slate-300 mb-2">Link Expiration</label>
-                    <select className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white">
-                      <option>1 Year (Recommended)</option>
-                      <option>6 Months</option>
-                      <option>3 Months</option>
-                      <option>Never Expire</option>
+                    <select 
+                      value={portfolioSettings.linkExpiration}
+                      onChange={(e) => savePortfolioSettings({ linkExpiration: e.target.value })}
+                      disabled={settingsLoading}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white disabled:opacity-50"
+                    >
+                      <option value="1-year">1 Year (Recommended)</option>
+                      <option value="6-months">6 Months</option>
+                      <option value="3-months">3 Months</option>
+                      <option value="never">Never Expire</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Track link analytics</span>
-                    <button className="w-12 h-6 bg-blue-600 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
+                    <ToggleSwitch
+                      enabled={portfolioSettings.trackAnalytics}
+                      onChange={(enabled) => savePortfolioSettings({ trackAnalytics: enabled })}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Allow public indexing</span>
-                    <button className="w-12 h-6 bg-slate-600 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
-                    </button>
+                    <ToggleSwitch
+                      enabled={portfolioSettings.allowPublicIndexing}
+                      onChange={(enabled) => savePortfolioSettings({ allowPublicIndexing: enabled })}
+                    />
                   </div>
                 </div>
               </Card>
@@ -481,25 +603,41 @@ const CandidateDashboard: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Include ReelSkills data</span>
-                    <button className="w-12 h-6 bg-blue-600 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
+                    <ToggleSwitch
+                      enabled={portfolioSettings.includeReelSkills}
+                      onChange={(enabled) => savePortfolioSettings({ includeReelSkills: enabled })}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Include ReelProjects data</span>
-                    <button className="w-12 h-6 bg-blue-600 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
+                    <ToggleSwitch
+                      enabled={portfolioSettings.includeReelProjects}
+                      onChange={(enabled) => savePortfolioSettings({ includeReelProjects: enabled })}
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-300">Show skill verification badges</span>
-                    <button className="w-12 h-6 bg-blue-600 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </button>
+                    <ToggleSwitch
+                      enabled={portfolioSettings.showVerificationBadges}
+                      onChange={(enabled) => savePortfolioSettings({ showVerificationBadges: enabled })}
+                    />
                   </div>
                 </div>
               </Card>
             </div>
+
+            {/* Settings Info */}
+            <Card className="bg-blue-500/10 border-blue-500/30">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-blue-300 mb-3">Settings Information</h3>
+                <div className="space-y-2 text-sm text-slate-300">
+                  <p><strong>Link Analytics:</strong> Track views, shares, and engagement metrics for your portfolio</p>
+                  <p><strong>Public Indexing:</strong> Allow search engines to discover your portfolio (improves visibility)</p>
+                  <p><strong>Data Sources:</strong> Control which platforms contribute to your portfolio showcase</p>
+                  <p><strong>Verification Badges:</strong> Display skill verification status from ReelSkills assessments</p>
+                </div>
+              </div>
+            </Card>
 
             {/* Current Link Management */}
             {publicLink && (
