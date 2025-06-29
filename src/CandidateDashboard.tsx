@@ -11,10 +11,9 @@ import {
   Settings,
   Sparkles,
   Zap,
-  Target,
-  Award
+  BarChart3,
+  TrendingUp
 } from 'lucide-react';
-import { apps } from './config/apps';
 import { getSupabaseClient } from './hooks/useAuth';
 import styles from './CandidateDashboard.module.css';
 
@@ -170,39 +169,6 @@ const CandidateDashboard: React.FC = () => {
     setLinkLoading(false);
   };
 
-  const handleNavigation = (path: string) => {
-    if (!path) return;
-
-    if (!path.startsWith('/')) {
-      window.open(path, '_self');
-      return;
-    }
-
-    const parts = path.split('/').filter(Boolean);
-    const first = parts[0];
-
-    // In-app navigation
-    if (['overview', 'settings'].includes(first)) {
-      setActiveTab(first as typeof activeTab);
-      return;
-    }
-
-    // External app navigation
-    const matchedApp = apps.find(appConf => {
-      const cleanedId = appConf.id.replace(/-/g, '').toLowerCase();
-      return cleanedId === first.toLowerCase();
-    });
-
-    if (matchedApp) {
-      const subPath = parts.slice(1).join('/');
-      const target = subPath ? `${matchedApp.url}/${subPath}` : matchedApp.url;
-      window.open(target, '_blank');
-      return;
-    }
-
-    window.location.href = path;
-  };
-
   const handleShareLink = async () => {
     if (!publicLink) return;
     
@@ -274,28 +240,10 @@ const CandidateDashboard: React.FC = () => {
             <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
                 <Eye size={20} className="text-blue-400" />
-                <Sparkles size={16} className="text-green-400" />
+                <TrendingUp size={16} className="text-green-400" />
               </div>
               <div className={styles.statValue}>{stats.totalViews.toLocaleString()}</div>
               <div className={styles.statLabel}>Portfolio Views</div>
-            </div>
-
-            <div className={styles.statCard}>
-              <div className="flex items-center justify-between mb-2">
-                <Target size={20} className="text-blue-400" />
-                <ExternalLink size={16} className="text-blue-400" />
-              </div>
-              <div className={styles.statValue}>{stats.skillsFromReelSkills}</div>
-              <div className={styles.statLabel}>Verified Skills</div>
-            </div>
-
-            <div className={styles.statCard}>
-              <div className="flex items-center justify-between mb-2">
-                <Award size={20} className="text-blue-400" />
-                <ExternalLink size={16} className="text-blue-400" />
-              </div>
-              <div className={styles.statValue}>{stats.projectsFromReelProjects}</div>
-              <div className={styles.statLabel}>Proven Projects</div>
             </div>
 
             <div className={styles.statCard}>
@@ -318,7 +266,7 @@ const CandidateDashboard: React.FC = () => {
 
             <div className={styles.statCard}>
               <div className="flex items-center justify-between mb-2">
-                <Settings size={20} className="text-blue-400" />
+                <BarChart3 size={20} className="text-blue-400" />
                 <Zap size={16} className="text-green-400" />
               </div>
               <div className={styles.statValue}>{stats.profileCompleteness}%</div>
@@ -361,7 +309,7 @@ const CandidateDashboard: React.FC = () => {
                 <h2 className="text-2xl font-bold text-white mb-2">Your Public Skills Portfolio</h2>
                 <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
                   Share your proven skills and projects with employers. No traditional resume needed - 
-                  just pure, verified talent showcase.
+                  just pure, verified talent showcase powered by ReelSkills and ReelProjects.
                 </p>
                 
                 {publicLink ? (
@@ -422,57 +370,10 @@ const CandidateDashboard: React.FC = () => {
               </div>
             </Card>
 
-            {/* Data Sources */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card
-                interactive
-                onClick={() => handleNavigation('/reelskills')}
-                className={styles.actionCard}
-              >
-                <Card.Header>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Target size={24} className="text-blue-400" />
-                    <div>
-                      <h3 className="text-lg font-bold text-white">ReelSkills Integration</h3>
-                      <p className="text-sm text-slate-400">Verified skills and assessments</p>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-300 mb-2">{stats.skillsFromReelSkills}</div>
-                  <p className="text-sm text-slate-400 mb-4">Skills verified and ready to showcase</p>
-                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                    <ExternalLink size={14} className="mr-2" />
-                    Manage Skills
-                  </Button>
-                </Card.Header>
-              </Card>
-
-              <Card
-                interactive
-                onClick={() => handleNavigation('/reelprojects')}
-                className={styles.actionCard}
-              >
-                <Card.Header>
-                  <div className="flex items-center gap-3 mb-3">
-                    <Award size={24} className="text-blue-400" />
-                    <div>
-                      <h3 className="text-lg font-bold text-white">ReelProjects Integration</h3>
-                      <p className="text-sm text-slate-400">Proven project portfolio</p>
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-300 mb-2">{stats.projectsFromReelProjects}</div>
-                  <p className="text-sm text-slate-400 mb-4">Projects completed and documented</p>
-                  <Button variant="outline" className="w-full border-slate-600/50 text-slate-300 hover:bg-slate-700/50">
-                    <ExternalLink size={14} className="mr-2" />
-                    Manage Projects
-                  </Button>
-                </Card.Header>
-              </Card>
-            </div>
-
             {/* Portfolio Analytics */}
             <Card className={styles.analyticsCard}>
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Eye size={20} className="text-blue-400" />
+                <BarChart3 size={20} className="text-blue-400" />
                 Portfolio Performance
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -491,6 +392,52 @@ const CandidateDashboard: React.FC = () => {
                 <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-300">{stats.profileCompleteness}%</div>
                   <div className="text-sm text-slate-400">Complete</div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Data Sources Info */}
+            <Card className="bg-slate-800/30 border-slate-700/50">
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Sparkles size={20} className="text-blue-400" />
+                  Automatic Data Integration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                        <Zap size={16} className="text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white">ReelSkills Integration</h4>
+                        <p className="text-sm text-slate-400">Verified skills automatically displayed</p>
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-300 mb-1">{stats.skillsFromReelSkills}</div>
+                    <p className="text-sm text-slate-400">Skills verified and showcased</p>
+                  </div>
+
+                  <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                        <Sparkles size={16} className="text-purple-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white">ReelProjects Integration</h4>
+                        <p className="text-sm text-slate-400">Proven projects automatically included</p>
+                      </div>
+                    </div>
+                    <div className="text-2xl font-bold text-purple-300 mb-1">{stats.projectsFromReelProjects}</div>
+                    <p className="text-sm text-slate-400">Projects completed and documented</p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-300">
+                    <strong>No manual entry required!</strong> Your portfolio automatically syncs with verified skills from ReelSkills 
+                    and proven projects from ReelProjects. Focus on building your expertise - we'll handle the showcase.
+                  </p>
                 </div>
               </div>
             </Card>
