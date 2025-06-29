@@ -37,6 +37,7 @@ interface SkillData {
   verified: boolean;
   category: string;
   endorsements: number;
+  assessmentScore?: number;
 }
 
 interface ProjectData {
@@ -46,6 +47,7 @@ interface ProjectData {
   status: string;
   impact: string;
   link?: string;
+  repositoryUrl?: string;
 }
 
 interface CandidateProfile {
@@ -112,10 +114,11 @@ const PublicCV: React.FC = () => {
           setProfile(profileData);
         }
 
-        // In a real implementation, these would be API calls to ReelSkills and ReelProjects
-        // For now, we'll simulate the data
-        await loadSkillsFromReelSkills(linkData.candidate_id);
-        await loadProjectsFromReelProjects(linkData.candidate_id);
+        // Load real skills data from database
+        await loadSkillsFromDatabase(linkData.candidate_id);
+        
+        // Load real projects data from database
+        await loadProjectsFromDatabase(linkData.candidate_id);
 
       } catch (error) {
         console.error('Error fetching portfolio data:', error);
@@ -128,80 +131,56 @@ const PublicCV: React.FC = () => {
     fetchPortfolioData();
   }, [slug]);
 
-  const loadSkillsFromReelSkills = async (candidateId: string) => {
-    // This would be an API call to ReelSkills service
-    // Simulating the response structure
-    const mockSkills: SkillData[] = [
-      {
-        name: 'React',
-        level: 'Expert',
-        verified: true,
-        category: 'Frontend',
-        endorsements: 15
-      },
-      {
-        name: 'TypeScript',
-        level: 'Advanced',
-        verified: true,
-        category: 'Programming',
-        endorsements: 12
-      },
-      {
-        name: 'Node.js',
-        level: 'Advanced',
-        verified: true,
-        category: 'Backend',
-        endorsements: 10
-      },
-      {
-        name: 'AWS',
-        level: 'Intermediate',
-        verified: true,
-        category: 'Cloud',
-        endorsements: 8
-      },
-      {
-        name: 'Python',
-        level: 'Advanced',
-        verified: true,
-        category: 'Programming',
-        endorsements: 14
+  const loadSkillsFromDatabase = async (candidateId: string) => {
+    try {
+      const { data: skillsData, error } = await supabase
+        .from('candidate_skills')
+        .select('*')
+        .eq('candidate_id', candidateId)
+        .order('endorsement_count', { ascending: false });
+
+      if (!error && skillsData) {
+        const formattedSkills: SkillData[] = skillsData.map(skill => ({
+          name: skill.skill_name,
+          level: skill.proficiency_level,
+          verified: skill.verified,
+          category: skill.skill_category,
+          endorsements: skill.endorsement_count || 0,
+          assessmentScore: skill.assessment_score
+        }));
+        
+        setSkills(formattedSkills);
       }
-    ];
-    
-    setSkills(mockSkills);
+    } catch (error) {
+      console.error('Failed to load skills from database:', error);
+    }
   };
 
-  const loadProjectsFromReelProjects = async (candidateId: string) => {
-    // This would be an API call to ReelProjects service
-    // Simulating the response structure
-    const mockProjects: ProjectData[] = [
-      {
-        title: 'E-commerce Platform Redesign',
-        description: 'Led the complete redesign of a high-traffic e-commerce platform, improving conversion rates by 35% and reducing load times by 60%.',
-        technologies: ['React', 'TypeScript', 'Node.js', 'PostgreSQL', 'AWS'],
-        status: 'Completed',
-        impact: '35% increase in conversion rate, 60% faster load times',
-        link: 'https://github.com/example/ecommerce-platform'
-      },
-      {
-        title: 'Real-time Analytics Dashboard',
-        description: 'Built a real-time analytics dashboard for monitoring business KPIs with live data visualization and automated alerting.',
-        technologies: ['React', 'D3.js', 'WebSocket', 'Python', 'Redis'],
-        status: 'Completed',
-        impact: 'Reduced decision-making time by 50%',
-        link: 'https://github.com/example/analytics-dashboard'
-      },
-      {
-        title: 'AI-Powered Content Recommendation Engine',
-        description: 'Developed a machine learning-based content recommendation system that increased user engagement by 40%.',
-        technologies: ['Python', 'TensorFlow', 'FastAPI', 'Docker', 'Kubernetes'],
-        status: 'Completed',
-        impact: '40% increase in user engagement'
+  const loadProjectsFromDatabase = async (candidateId: string) => {
+    try {
+      const { data: projectsData, error } = await supabase
+        .from('candidate_projects')
+        .select('*')
+        .eq('candidate_id', candidateId)
+        .eq('project_status', 'completed')
+        .order('completion_date', { ascending: false });
+
+      if (!error && projectsData) {
+        const formattedProjects: ProjectData[] = projectsData.map(project => ({
+          title: project.project_title,
+          description: project.project_description || '',
+          technologies: Array.isArray(project.technologies) ? project.technologies : [],
+          status: project.project_status,
+          impact: project.impact_metrics || '',
+          link: project.project_url,
+          repositoryUrl: project.repository_url
+        }));
+        
+        setProjects(formattedProjects);
       }
-    ];
-    
-    setProjects(mockProjects);
+    } catch (error) {
+      console.error('Failed to load projects from database:', error);
+    }
   };
 
   const getSkillLevelColor = (level: string) => {
@@ -348,30 +327,41 @@ const PublicCV: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {skills.map((skill, index) => (
-                    <div key={index} className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-white">{skill.name}</h3>
-                        {skill.verified && (
-                          <CheckCircle size={16} className="text-green-400" />
-                        )}
+                {skills.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {skills.map((skill, index) => (
+                      <div key={index} className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-semibold text-white">{skill.name}</h3>
+                          {skill.verified && (
+                            <CheckCircle size={16} className="text-green-400" />
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium border ${getSkillLevelColor(skill.level)}`}>
+                            {skill.level}
+                          </span>
+                          <span className="text-xs text-slate-400">{skill.category}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
+                          <Star size={12} />
+                          {skill.endorsements} endorsements
+                          {skill.assessmentScore && (
+                            <span className="ml-2">Score: {skill.assessmentScore}%</span>
+                          )}
+                        </div>
                       </div>
-                      
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-1 rounded text-xs font-medium border ${getSkillLevelColor(skill.level)}`}>
-                          {skill.level}
-                        </span>
-                        <span className="text-xs text-slate-400">{skill.category}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-xs text-slate-400">
-                        <Star size={12} />
-                        {skill.endorsements} endorsements
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <Target size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>No skills data available yet.</p>
+                    <p className="text-sm mt-2">Skills will appear here when verified through ReelSkills.</p>
+                  </div>
+                )}
                 
                 <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm text-blue-300">
@@ -393,52 +383,77 @@ const PublicCV: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="space-y-6">
-                  {projects.map((project, index) => (
-                    <div key={index} className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-6">
-                      <div className="flex items-start justify-between mb-3">
-                        <h3 className="text-xl font-semibold text-white">{project.title}</h3>
-                        {project.link && (
-                          <Button 
-                            as="a" 
-                            href={project.link} 
-                            target="_blank"
-                            variant="outline"
-                            size="small"
-                            className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
-                          >
-                            <Code size={14} className="mr-1" />
-                            View Code
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <p className="text-slate-300 mb-4">{project.description}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {project.technologies.map((tech, techIndex) => (
-                          <span 
-                            key={techIndex}
-                            className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1 text-green-400">
-                          <CheckCircle size={14} />
-                          {project.status}
+                {projects.length > 0 ? (
+                  <div className="space-y-6">
+                    {projects.map((project, index) => (
+                      <div key={index} className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-6">
+                        <div className="flex items-start justify-between mb-3">
+                          <h3 className="text-xl font-semibold text-white">{project.title}</h3>
+                          <div className="flex gap-2">
+                            {project.repositoryUrl && (
+                              <Button 
+                                as="a" 
+                                href={project.repositoryUrl} 
+                                target="_blank"
+                                variant="outline"
+                                size="small"
+                                className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                              >
+                                <Code size={14} className="mr-1" />
+                                Code
+                              </Button>
+                            )}
+                            {project.link && (
+                              <Button 
+                                as="a" 
+                                href={project.link} 
+                                target="_blank"
+                                variant="outline"
+                                size="small"
+                                className="border-slate-600/50 text-slate-300 hover:bg-slate-700/50"
+                              >
+                                <ExternalLink size={14} className="mr-1" />
+                                Live
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-slate-400">
-                          <TrendingUp size={14} />
-                          {project.impact}
+                        
+                        <p className="text-slate-300 mb-4">{project.description}</p>
+                        
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {project.technologies.map((tech, techIndex) => (
+                            <span 
+                              key={techIndex}
+                              className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm">
+                          <div className="flex items-center gap-1 text-green-400">
+                            <CheckCircle size={14} />
+                            {project.status}
+                          </div>
+                          {project.impact && (
+                            <div className="flex items-center gap-1 text-slate-400">
+                              <TrendingUp size={14} />
+                              {project.impact}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <Award size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>No projects data available yet.</p>
+                    <p className="text-sm mt-2">Projects will appear here when documented through ReelProjects.</p>
+                  </div>
+                )}
                 
                 <div className="mt-6 p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
                   <p className="text-sm text-purple-300">
@@ -476,22 +491,24 @@ const PublicCV: React.FC = () => {
             </Card>
 
             {/* Skill Categories */}
-            <Card className="bg-slate-800/30 border-slate-700/50">
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-white mb-4">Skill Categories</h3>
-                <div className="space-y-2">
-                  {Array.from(new Set(skills.map(skill => skill.category))).map((category, index) => {
-                    const categorySkills = skills.filter(skill => skill.category === category);
-                    return (
-                      <div key={index} className="flex items-center justify-between">
-                        <span className="text-slate-300">{category}</span>
-                        <span className="text-blue-300 font-bold">{categorySkills.length}</span>
-                      </div>
-                    );
-                  })}
+            {skills.length > 0 && (
+              <Card className="bg-slate-800/30 border-slate-700/50">
+                <div className="p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">Skill Categories</h3>
+                  <div className="space-y-2">
+                    {Array.from(new Set(skills.map(skill => skill.category))).map((category, index) => {
+                      const categorySkills = skills.filter(skill => skill.category === category);
+                      return (
+                        <div key={index} className="flex items-center justify-between">
+                          <span className="text-slate-300">{category}</span>
+                          <span className="text-blue-300 font-bold">{categorySkills.length}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             {/* ReelApps Ecosystem Promotion */}
             <Card className="bg-gradient-to-r from-green-600/20 to-blue-600/20 border-green-500/30">

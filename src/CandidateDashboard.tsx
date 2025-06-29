@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from './hooks/useAuth';
+import { usePortfolioStats } from './hooks/usePortfolioStats';
 import { Card, Button } from './components/ui';
 import { 
   Share2,
@@ -35,15 +36,6 @@ interface PublicLink {
   created_at: string;
 }
 
-interface ProfileStats {
-  totalViews: number;
-  profileScore: number;
-  skillsFromReelSkills: number;
-  projectsFromReelProjects: number;
-  linkShares: number;
-  profileCompleteness: number;
-}
-
 interface PortfolioSettings {
   linkExpiration: string;
   trackAnalytics: boolean;
@@ -55,19 +47,12 @@ interface PortfolioSettings {
 
 const CandidateDashboard: React.FC = () => {
   const { user, profile, logout } = useAuthStore();
+  const { stats, loading: statsLoading, refreshStats } = usePortfolioStats(user?.id);
   const [activeTab, setActiveTab] = useState<'overview' | 'settings'>('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [publicLink, setPublicLink] = useState<PublicLink | null>(null);
   const [linkLoading, setLinkLoading] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(false);
-  const [stats, setStats] = useState<ProfileStats>({
-    totalViews: 0,
-    profileScore: 0,
-    skillsFromReelSkills: 0,
-    projectsFromReelProjects: 0,
-    linkShares: 0,
-    profileCompleteness: 0
-  });
 
   const [portfolioSettings, setPortfolioSettings] = useState<PortfolioSettings>({
     linkExpiration: '1-year',
@@ -78,7 +63,7 @@ const CandidateDashboard: React.FC = () => {
     showVerificationBadges: true
   });
 
-  // Load data from database and external sources
+  // Load dashboard data
   useEffect(() => {
     if (!user) return;
     
@@ -87,9 +72,6 @@ const CandidateDashboard: React.FC = () => {
       try {
         // Load public link
         await fetchPublicLink();
-        
-        // Load real stats from database
-        await loadRealStats();
         
         // Load portfolio settings
         await loadPortfolioSettings();
@@ -103,61 +85,6 @@ const CandidateDashboard: React.FC = () => {
 
     loadDashboardData();
   }, [user]);
-
-  const loadRealStats = async () => {
-    if (!user) return;
-    
-    try {
-      const supabase = getSupabaseClient();
-      
-      // Get total views from all public links
-      const { data: linksData, error: linksError } = await supabase
-        .from('public_cv_links')
-        .select('view_count')
-        .eq('candidate_id', user.id);
-
-      const totalViews = linksData?.reduce((sum, link) => sum + (link.view_count || 0), 0) || 0;
-
-      // Get count of active links (for link shares metric)
-      const { data: activeLinksData, error: activeLinksError } = await supabase
-        .from('public_cv_links')
-        .select('id')
-        .eq('candidate_id', user.id)
-        .eq('revoked', false);
-
-      const linkShares = activeLinksData?.length || 0;
-
-      // Calculate profile completeness based on available data
-      let completenessScore = 0;
-      if (profile?.first_name) completenessScore += 20;
-      if (profile?.last_name) completenessScore += 20;
-      if (profile?.title) completenessScore += 15;
-      if (profile?.bio) completenessScore += 15;
-      if (profile?.location) completenessScore += 10;
-      if (profile?.email) completenessScore += 10;
-      if (profile?.linkedin_url) completenessScore += 5;
-      if (profile?.github_url) completenessScore += 5;
-
-      // Calculate a basic portfolio score (this would be more sophisticated in a real app)
-      const portfolioScore = Math.min(100, Math.round(
-        (completenessScore * 0.4) + 
-        (Math.min(totalViews / 10, 30)) + 
-        (linkShares * 5)
-      ));
-
-      setStats({
-        totalViews,
-        profileScore: portfolioScore,
-        skillsFromReelSkills: 0, // Would come from ReelSkills API
-        projectsFromReelProjects: 0, // Would come from ReelProjects API
-        linkShares,
-        profileCompleteness: completenessScore
-      });
-    } catch (error) {
-      console.error('Failed to load real stats:', error);
-      // Keep default values on error
-    }
-  };
 
   const loadPortfolioSettings = async () => {
     if (!user) return;
@@ -287,7 +214,7 @@ const CandidateDashboard: React.FC = () => {
         });
         
         // Refresh stats after generating new link
-        await loadRealStats();
+        await refreshStats();
       }
     } catch (error) {
       console.error('Failed to generate link:', error);
@@ -306,7 +233,7 @@ const CandidateDashboard: React.FC = () => {
         .eq('slug', publicLink.slug);
       setPublicLink(null);
       // Refresh stats after revoking link
-      await loadRealStats();
+      await refreshStats();
     } catch (error) {
       console.error('Failed to revoke link:', error);
     }
@@ -361,7 +288,7 @@ const CandidateDashboard: React.FC = () => {
     </button>
   );
 
-  if (isLoading) {
+  if (isLoading || statsLoading) {
     return (
       <div className={styles.dashboard}>
         <div className="max-w-7xl mx-auto p-8 flex items-center justify-center min-h-screen">
@@ -580,7 +507,7 @@ const CandidateDashboard: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                   <Sparkles size={20} className="text-blue-400" />
-                  Automatic Data Integration
+                  Real Data Integration
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-slate-700/30 border border-slate-600/50 rounded-lg p-4">
@@ -590,7 +517,7 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold text-white">ReelSkills Integration</h4>
-                        <p className="text-sm text-slate-400">Verified skills automatically displayed</p>
+                        <p className="text-sm text-slate-400">Verified skills from database</p>
                       </div>
                     </div>
                     <div className="text-2xl font-bold text-blue-300 mb-1">{stats.skillsFromReelSkills}</div>
@@ -604,7 +531,7 @@ const CandidateDashboard: React.FC = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold text-white">ReelProjects Integration</h4>
-                        <p className="text-sm text-slate-400">Proven projects automatically included</p>
+                        <p className="text-sm text-slate-400">Projects from database</p>
                       </div>
                     </div>
                     <div className="text-2xl font-bold text-purple-300 mb-1">{stats.projectsFromReelProjects}</div>
@@ -614,7 +541,7 @@ const CandidateDashboard: React.FC = () => {
                 
                 <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <p className="text-sm text-blue-300">
-                    <strong>No manual entry required!</strong> Your portfolio automatically syncs with verified skills from <ReelSkillsLink /> 
+                    <strong>Real database integration!</strong> Your portfolio automatically syncs with verified skills from <ReelSkillsLink /> 
                     and proven projects from <ReelProjectsLink />. Focus on building your expertise - we'll handle the showcase.
                   </p>
                 </div>
@@ -691,6 +618,16 @@ const CandidateDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
+                
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-sm text-blue-300 mb-2">
+                    <strong>Maximize your portfolio impact:</strong>
+                  </p>
+                  <div className="space-y-1 text-sm">
+                    <ReelSkillsLink className="block" />
+                    <ReelProjectsLink className="block" />
+                  </div>
+                </div>
               </Card>
 
               <Card className={styles.settingsCard}>
@@ -716,16 +653,6 @@ const CandidateDashboard: React.FC = () => {
                       enabled={portfolioSettings.showVerificationBadges}
                       onChange={(enabled) => savePortfolioSettings({ showVerificationBadges: enabled })}
                     />
-                  </div>
-                </div>
-                
-                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-sm text-blue-300 mb-2">
-                    <strong>Maximize your portfolio impact:</strong>
-                  </p>
-                  <div className="space-y-1 text-sm">
-                    <ReelSkillsLink className="block" />
-                    <ReelProjectsLink className="block" />
                   </div>
                 </div>
               </Card>
