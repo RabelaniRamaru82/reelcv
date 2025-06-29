@@ -51,9 +51,9 @@ export const useAuthStore = (): AuthState & AuthActions => {
         .from('profiles')
         .select('*')
         .eq('id', state.user.id)
-        .single();
+        .maybeSingle();
       
-      if (!error && data) {
+      if (!error) {
         setState(prev => ({ ...prev, profile: data }));
       }
     } catch (error) {
